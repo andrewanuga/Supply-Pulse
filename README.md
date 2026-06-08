@@ -40,6 +40,11 @@ MONGODB_DB_NAME=supplypulse
 # Google AI Studio — aistudio.google.com → Get API Key
 GOOGLE_API_KEY=AIza...
 
+# Google Maps Places API — console.cloud.google.com → Enable "Places API"
+# Used for live supplier fallback when DB has < 3 results (cold-start fix)
+# Optional: demo mode returns realistic Lagos data when key is absent
+GOOGLE_MAPS_API_KEY=AIza...
+
 # Resend — resend.com → API Keys (free: 3,000 emails/month)
 RESEND_API_KEY=re_...
 
@@ -101,21 +106,22 @@ This generates real 768-dim `text-embedding-004` embeddings — required for Atl
 User: "Supplier Chukwuemeka Electronics has gone silent. 
        3 open orders, 800 TV remotes needed by Friday."
 
-[SENSE]    → Classifies: supplier_unavailability
-[DIAGNOSE] → get_affected_orders() → 3 orders, ₦1,800,000 at risk
-[MATCH]    → find_alternative_suppliers() → $vectorSearch on 768-dim embeddings
-             ↳ Techmart Supplies — 94% match
-             ↳ Lagos Electronics Hub — 87% match
-             ↳ Gadget Wholesale Ltd — 71% match
-[PLAN]     → Ranked recovery plan: Option A / B / C with trade-off rationale
-[EXECUTE]  → Operator types "Approve Option A"
-             ↳ update_order_supplier() — 3 MongoDB records updated
-             ↳ send_vendor_email() — email sent via Resend API
-             ↳ log_decision() — decision written to audit trail
-[VERIFY]   → Resolution summary: 2m 47s, +₦54,000, audit trail stored
+[SENSE]      → Classifies: supplier_unavailability
+[DIAGNOSE]   → get_affected_orders() → 3 orders, ₦1,800,000 at risk
+[MATCH-DB]   → find_alternative_suppliers() → $vectorSearch on 768-dim embeddings
+               ↳ Techmart Supplies [YOUR DB] — 94% match
+[MATCH-MAPS] → maps_search_suppliers() — DB < 3 results, Google Maps fallback fires
+               ↳ Lagos Electronics Hub [MAPS LIVE — Open Now ★4.3]
+               ↳ Alaba Int'l Market [MAPS LIVE — Open Now ★4.1]
+[PLAN]       → Ranked recovery plan: Option A / B / C with source provenance
+[EXECUTE]    → Operator types "Approve Option A"
+               ↳ update_order_supplier() — 3 MongoDB records updated
+               ↳ send_vendor_email() — email sent via Resend API
+               ↳ log_decision() — decision + source written to audit trail
+[VERIFY]     → Resolution: 2m 47s, +₦54,000, chosen_source: "user_db", audit stored
 ```
 
-**5 real Gemini function calls. Real MongoDB reads + writes. Real email sent.**
+**7 real Gemini function calls. Real MongoDB reads + writes. Real email sent. Cold-start solved via Google Maps.**
 
 ---
 
@@ -135,10 +141,11 @@ supply-pulse/
 │   ├── error.tsx             # Error boundary
 │   └── loading.tsx           # Loading state
 ├── lib/
-│   ├── agent.ts              # Core Gemini agent + 5 tool implementations
+│   ├── agent.ts              # Core Gemini agent + 7 tool implementations
+│   ├── maps.ts               # Google Maps Places API fallback (cold-start fix)
 │   ├── mongodb.ts            # MongoDB Atlas connection (global singleton)
 │   ├── email.ts              # Resend vendor email
-│   ├── types.ts              # TypeScript interfaces
+│   ├── types.ts              # TypeScript interfaces (v3 schema)
 │   └── utils.ts              # Helpers: formatNaira, getStatusColor, etc.
 ├── components/
 │   ├── providers.tsx         # next-themes ThemeProvider
@@ -173,13 +180,17 @@ Or connect your GitHub repo at [vercel.com/new](https://vercel.com/new) for auto
 | Natural Language Disruption Intake | F-01 | ✅ |
 | Disruption Classification | F-02 | ✅ |
 | MongoDB Vector Search Matching | F-03 ★ | ✅ |
-| Ranked Recovery Plan Generation | F-04 | ✅ |
-| Human-in-the-Loop Approval | F-05 | ✅ |
-| MongoDB Order Updates | F-06 | ✅ |
-| Automated Vendor Email (Resend) | F-07 | ✅ |
-| Full Decision Audit Trail | F-08 | ✅ |
-| Resolution Summary Card | F-09 | ✅ |
-| Operator Dashboard with KPIs | F-10 | ✅ |
+| Google Maps Places Fallback | F-04 ★ | ✅ |
+| Source Labelling [YOUR DB] / [MAPS LIVE] | F-05 | ✅ |
+| Ranked Recovery Plan Generation | F-06 | ✅ |
+| Human-in-the-Loop Approval | F-07 | ✅ |
+| MongoDB Order Updates | F-08 | ✅ |
+| Automated Vendor Email (Resend) | F-09 | ✅ |
+| Full Decision Audit Trail (v3 schema) | F-10 | ✅ |
+| Resolution Summary Card | F-11 | ✅ |
+| Operator Dashboard with KPIs | F-12 | ✅ |
+| Maps vs DB Source Breakdown (F-12) | F-12 | ✅ |
+| Save Maps Supplier to MongoDB | F-13 | ✅ |
 
 ---
 
@@ -191,6 +202,7 @@ Or connect your GitHub repo at [vercel.com/new](https://vercel.com/new) for auto
 | AI Agent | Gemini 2.0 Flash (function calling via `@google/generative-ai`) |
 | Database | MongoDB Atlas (documents + `$vectorSearch`) |
 | Embeddings | Google `text-embedding-004` (768 dimensions) |
+| Supplier Discovery | Google Maps Places API (Text Search, cold-start fallback) |
 | Email | Resend API |
 | Theme | `next-themes` (dark `#121212` + blue / light `#fff` + blue) |
 | Deployment | Vercel |
