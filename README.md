@@ -6,7 +6,7 @@
 
 SupplyPulse resolves supply chain disruptions in under **3 minutes** — MongoDB Atlas Vector Search + Gemini 2.0 Flash + autonomous multi-tool execution with human-in-the-loop approval.
 
-**Hackathon:** Building Agents for Real-World Challenges · **Track:** MongoDB
+**Stack:** MongoDB Atlas · Gemini 2.0 Flash · Google Maps Places · Next.js 16 · Resend
 
 ---
 
@@ -211,18 +211,19 @@ Or connect your GitHub repo at [vercel.com/new](https://vercel.com/new) for auto
 
 ---
 
-## 🎯 3-Minute Demo Script
+## 🚀 Example Workflow
 
-| Time | Step | What to say/do |
-|------|------|---------------|
-| 0:00 | Hook | "A supplier just ghosted a ₦2.4M order. Watch SupplyPulse resolve it in under 3 minutes." |
-| 0:20 | Intake | Type: "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday." |
-| 0:50 | Diagnose + Match | Show: 3 orders, ₦1.8M at risk. Vector search returns Techmart (94%), Lagos Hub (87%), Gadget (71%). |
-| 1:20 | Plan | Option A: Techmart — 94%, 2-day, +3% price. Full rationale shown. |
-| 1:50 | Execute | Click Approve. MongoDB records update live. Email sent. Decision log written. |
-| 2:20 | Verify | Resolution: 2m 47s, ₦54k cost delta, audit trail stored. |
-| 2:40 | Close | "Because your suppliers' problems shouldn't become your customers' problems." |
+```
+1. Open the dashboard → click "Seed Data"
+2. In the AI Agent tab, type:
+   "Supplier Chukwuemeka Electronics has gone silent. 
+    3 open orders, 800 TV remotes needed by Friday."
+3. SupplyPulse surfaces affected orders and searches for alternatives
+4. Review the ranked plan (Option A/B/C) with rationale and lead times
+5. Type "Approve Option A" — records update, vendor email sends, audit log written
+6. Resolution card shows time-to-resolve, cost delta, and supplier source
+```
 
 ---
 
-*Built for the MongoDB Hackathon · June 2026 · SupplyPulse Team*
+*SupplyPulse · June 2026*

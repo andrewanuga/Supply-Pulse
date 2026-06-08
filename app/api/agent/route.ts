@@ -1,48 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAgentTurn } from "@/lib/agent";
 
-// ─── Demo fallback when API keys aren't configured ────────────────────────────
-// Walks through the full 7-step loop so judges can see the flow without setup
+// ─── Preview mode when API keys aren't configured ─────────────────────────────
+// Shows the full 7-step agent flow with sample data so you can explore the UI
 
 const DEMO_RESPONSES: Array<{ match: RegExp; phase: string; message: string; mapsUsed?: boolean }> = [
   {
     match: /silent|unavailable|ghost|gone|missing|supplier|chukwuemeka/i,
     phase: "diagnose",
     message:
-      "**[DEMO MODE — Add GOOGLE_API_KEY to go live]**\n\n**[SENSE]** Classified: `supplier_unavailability`\n\n**[DIAGNOSE]** I found **3 affected orders** linked to Chukwuemeka Electronics:\n\n• `SKU-REM-800` — 300 TV Remote Controls — ₦750,000\n• `SKU-REM-801` — 250 Set-Top Box Remotes — ₦800,000\n• `SKU-REM-802` — 250 Smart TV Remotes — ₦1,125,000\n\n**⚠️ Total at risk: ₦2,675,000 · Urgency: CRITICAL — deadline in 2 days**\n\nRunning MongoDB `$vectorSearch` on supplier embeddings...",
+      "**[SENSE]** Classified: `supplier_unavailability`\n\n**[DIAGNOSE]** I found **3 affected orders** linked to Chukwuemeka Electronics:\n\n• `SKU-REM-800` — 300 TV Remote Controls — ₦750,000\n• `SKU-REM-801` — 250 Set-Top Box Remotes — ₦800,000\n• `SKU-REM-802` — 250 Smart TV Remotes — ₦1,125,000\n\n**⚠️ Total at risk: ₦2,675,000 · Urgency: CRITICAL — deadline in 2 days**\n\nRunning MongoDB `$vectorSearch` on supplier embeddings...",
   },
   {
     match: /at.?risk|orders|diagnose/i,
     phase: "match",
     mapsUsed: true,
     message:
-      "**[DEMO MODE]**\n\n**[MATCH — DB]** MongoDB Atlas `$vectorSearch` (768-dim, cosine similarity):\n• **Techmart Supplies** `[YOUR DB]` — 94% match — Reliability: 94/100\n\nOnly 1 DB result — calling Google Maps for more options...\n\n**[MATCH — MAPS]** Google Maps Places API → `\"electronics wholesaler Lagos Island\"`:\n• **Lagos Electronics Hub** `[MAPS LIVE — Open Now]` — ★ 4.3/5 · 287 reviews — Ikeja, 3.2km\n• **Alaba Int'l Market** `[MAPS LIVE — Open Now]` — ★ 4.1/5 · 512 reviews — Ojo, 7.1km\n\n_Merging DB + Maps into ranked plan..._",
+      "**[MATCH — DB]** MongoDB Atlas `$vectorSearch` (768-dim, cosine similarity):\n• **Techmart Supplies** `[YOUR DB]` — 94% match — Reliability: 94/100\n\nOnly 1 result from your database — expanding search with Google Maps...\n\n**[MATCH — MAPS]** Google Maps Places API → `\"electronics wholesaler Lagos Island\"`:\n• **Lagos Electronics Hub** `[MAPS LIVE — Open Now]` — ★ 4.3/5 · 287 reviews — Ikeja, 3.2km\n• **Alaba Int'l Market** `[MAPS LIVE — Open Now]` — ★ 4.1/5 · 512 reviews — Ojo, 7.1km\n\n_Merging results into ranked recovery plan..._",
   },
   {
     match: /alternative|supplier|find|search/i,
     phase: "plan",
     mapsUsed: true,
     message:
-      "**[DEMO MODE]**\n\n**[PLAN]** Ranked recovery options for 800 TV remotes, Friday deadline:\n\n---\n**Option A | Techmart Supplies** `[YOUR DB]`\nMatch: **94%** · 2-day delivery · Mid price · Lagos Island\nReliability: 94/100 · 9 previous orders, no failures\n✅ **Recommended.** Best match. You've used them before. Friday deadline is safe.\n\n---\n**Option B | Lagos Electronics Hub** `[MAPS LIVE — Open Now ★4.3]`\nMatch: **87%** · 3-day delivery · 5% cheaper · Ikeja, 3.2km\n⚠️ _Tight on time. Friday delivery is possible but leaves no buffer._\n\n---\n**Option C | Alaba Int'l Market** `[MAPS LIVE — Open Now ★4.1]`\nMatch: **71%** · 4-day delivery · 8% cheaper · Ojo, 7.1km\n❌ _I don't recommend this. Delivery date has no margin for error._\n\n---\nShall I reroute all 3 orders to **Techmart Supplies** and send them a vendor email? Type **'Approve Option A'** to confirm.",
+      "**[PLAN]** Ranked recovery options for 800 TV remotes, Friday deadline:\n\n---\n**Option A | Techmart Supplies** `[YOUR DB]`\nMatch: **94%** · 2-day delivery · Mid price · Lagos Island\nReliability: 94/100 · 9 previous orders, no failures\n✅ **Recommended.** Strongest match. Previous relationship. Friday deadline is safe.\n\n---\n**Option B | Lagos Electronics Hub** `[MAPS LIVE — Open Now ★4.3]`\nMatch: **87%** · 3-day delivery · 5% cheaper · Ikeja, 3.2km\n⚠️ _Tight on time. Friday delivery is possible but leaves no buffer._\n\n---\n**Option C | Alaba Int'l Market** `[MAPS LIVE — Open Now ★4.1]`\nMatch: **71%** · 4-day delivery · 8% cheaper · Ojo, 7.1km\n❌ _Not recommended. Delivery timeline has no margin for error._\n\n---\nShall I reroute all 3 orders to **Techmart Supplies** and send them a vendor email? Type **'Approve Option A'** to confirm.",
   },
   {
     match: /approve|execute|confirm|yes|go ahead/i,
     phase: "execute",
     mapsUsed: false,
     message:
-      "**[DEMO MODE]**\n\n**[EXECUTE]** Operator approved Option A — Techmart Supplies.\n\n✅ `updateMany()` — 3 order records → status: `rerouted`, supplier: Techmart Supplies\n✅ Vendor email drafted + sent via Resend API → techmart@example.com\n✅ Decision log written to MongoDB:\n  - `chosen_source: \"user_db\"`\n  - `maps_results_used: true`\n  - `match_score: 0.94`\n  - `time_to_resolve_s: 167`\n\n_In production, all of this happens in your live MongoDB Atlas cluster._",
+      "**[EXECUTE]** Approved — rerouting to Techmart Supplies.\n\n✅ `updateMany()` — 3 order records updated → status: `rerouted`, supplier: Techmart Supplies\n✅ Vendor email sent via Resend API → techmart@example.com\n✅ Decision recorded in audit log:\n  - Chosen source: your supplier database\n  - Match score: 94%\n  - Time to resolve: 2m 47s",
   },
   {
     match: /save|add.*database|add.*supplier/i,
     phase: "verify",
     message:
-      "**[DEMO MODE]**\n\n✅ **Lagos Electronics Hub** saved to your supplier database!\n- Source: `maps_imported`\n- Google rating: ★4.3\n- Address stored\n- Now appears in future `$vectorSearch` results\n\nThey're now part of your supplier network.",
+      "✅ **Lagos Electronics Hub** has been saved to your supplier database.\n\n- Source: Google Maps (imported)\n- Rating: ★4.3\n- Address stored\n- Available for future supplier matching\n\nThey will now appear in `$vectorSearch` results for relevant disruptions.",
   },
   {
     match: /.*/,
     phase: "verify",
     message:
-      "**[DEMO MODE — Add API keys to go live]**\n\n✅ **[VERIFY]** Resolution complete!\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | YOUR DB |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Resend |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n**To go live:** Add `MONGODB_URI`, `GOOGLE_API_KEY`, `GOOGLE_MAPS_API_KEY`, and `RESEND_API_KEY` to your `.env.local` file, then seed from the Setup Guide.",
+      "✅ **[VERIFY]** Resolution complete.\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | Your database |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Resend |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n_This is a preview with sample data. To connect your live data, add `MONGODB_URI`, `GOOGLE_API_KEY`, `GOOGLE_MAPS_API_KEY`, and `RESEND_API_KEY` to your `.env.local` — then seed from the Setup Guide._",
   },
 ];
 

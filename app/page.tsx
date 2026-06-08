@@ -218,7 +218,7 @@ export default function LandingPage() {
           <div className={`transition-all duration-1000 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
             <div className="badge mb-6 w-fit">
               <Star className="w-3 h-3" />
-              MongoDB Track · June 2026 Hackathon
+              AI Supply Chain Management
             </div>
             <h1 className="text-5xl md:text-6xl xl:text-7xl font-bold leading-tight tracking-tight mb-6" style={{ color: "var(--text)" }}>
               Supply chain<br />
@@ -414,17 +414,17 @@ export default function LandingPage() {
               Every feature you need.<br /><span className="gradient-text">Nothing you don&apos;t.</span>
             </h2>
             <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--text-muted)" }}>
-              Built lean for a 5-day hackathon. All 8 MUST-have features shipped clean.
+              Everything you need to go from disruption to resolution — without the chaos.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: Brain, id: "F-01", title: "Natural Language Intake", desc: "Describe any disruption in plain English. The agent classifies, reasons, and acts — no forms, no dropdowns." },
-              { icon: Database, id: "F-03 ★", title: "Vector Search Matching", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings. Semantic matching finds the right supplier even with imperfect data." },
-              { icon: TrendingUp, id: "F-04", title: "Ranked Recovery Plans", desc: "Gemini 2.0 Flash reasons over candidates and presents Option A/B/C with trade-off rationale in plain English." },
-              { icon: Shield, id: "F-05", title: "Human-in-the-Loop", desc: "Zero write operations happen without your explicit approval. You stay in control, always." },
-              { icon: Mail, id: "F-07", title: "Auto Vendor Emails", desc: "Professional vendor communication drafted and sent via Resend API the moment you approve. Logged in the audit trail." },
-              { icon: Clock, id: "F-08", title: "Full Audit Trail", desc: "Every agent decision written to MongoDB with timestamp, rationale, chosen supplier, cost delta, and operator ID." },
+              { icon: Brain, title: "Natural Language Intake", desc: "Describe any disruption in plain English. The agent classifies, reasons, and acts — no forms, no dropdowns." },
+              { icon: Database, title: "Semantic Supplier Matching", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings finds the most relevant alternatives, even with imperfect descriptions." },
+              { icon: TrendingUp, title: "Ranked Recovery Plans", desc: "Gemini 2.0 Flash reasons over every candidate and presents Option A/B/C with clear trade-off rationale." },
+              { icon: Shield, title: "Human-in-the-Loop", desc: "No orders are updated, no emails are sent, until you approve. You stay in control at every step." },
+              { icon: Mail, title: "Automated Vendor Emails", desc: "Professional vendor outreach drafted and sent via Resend the moment you approve — and logged to the audit trail." },
+              { icon: Clock, title: "Full Audit Trail", desc: "Every agent decision is written to MongoDB with timestamp, rationale, chosen supplier, cost delta, and source." },
             ].map((f) => (
               <TiltCard key={f.title} className="p-6">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
@@ -433,8 +433,6 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="font-semibold" style={{ color: "var(--text)" }}>{f.title}</h3>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                    style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)", border: "1px solid rgba(37,99,235,0.2)" }}>{f.id}</span>
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{f.desc}</p>
               </TiltCard>
@@ -452,7 +450,7 @@ export default function LandingPage() {
               The <span className="gradient-text">actual</span> stack.
             </h2>
             <p className="text-base max-w-xl mx-auto" style={{ color: "var(--text-muted)" }}>
-              No Google Cloud Agent Builder — we use Gemini SDK directly for function calling. Simpler, faster, fully controllable.
+              Each piece chosen for reliability and real-world performance — nothing included that doesn&apos;t earn its place.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -478,39 +476,31 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <div className="reveal mt-8 glass-card rounded-2xl p-5 flex flex-wrap gap-4 items-center">
-            <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Removed from PRD (not used):</span>
-            {["Google Cloud Agent Builder", "Clerk / Supabase Auth"].map((t) => (
-              <span key={t} className="text-xs px-3 py-1 rounded-full line-through"
-                style={{ background: "rgba(239,68,68,0.08)", color: "rgba(239,68,68,0.6)", border: "1px solid rgba(239,68,68,0.15)" }}>{t}</span>
-            ))}
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>— Gemini SDK + no auth needed for demo.</span>
-          </div>
         </div>
       </section>
 
-      {/* ── DEMO SCRIPT ─────────────────────────────────────────────── */}
+      {/* ── QUICK START ─────────────────────────────────────────────── */}
       <section className="section" style={{ background: "var(--bg-2)" }}>
         <div className="max-w-4xl mx-auto">
           <div className="reveal text-center mb-12">
-            <div className="badge mb-4 mx-auto w-fit"><Package className="w-3 h-3" />3-Minute Demo Script</div>
-            <h2 className="text-4xl font-bold mb-4" style={{ color: "var(--text)" }}>What judges will see.</h2>
+            <div className="badge mb-4 mx-auto w-fit"><Package className="w-3 h-3" />Quick Start</div>
+            <h2 className="text-4xl font-bold mb-4" style={{ color: "var(--text)" }}>Resolve your first disruption<br /><span className="gradient-text">in under 3 minutes.</span></h2>
             <p className="text-base" style={{ color: "var(--text-muted)" }}>
-              Practice this exactly. It&apos;s designed to maximize WOW per second.
+              Connect your data, describe the disruption, and let the agent do the rest.
             </p>
           </div>
           <div className="space-y-4">
             {[
-              { time: "0:00", label: "Hook", text: '"A supplier just ghosted a ₦2.4M order of electronics stock. Watch SupplyPulse resolve it in under 3 minutes."', color: "#818CF8" },
-              { time: "0:20", label: "Intake", text: 'Type: "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday."', color: "#FBBF24" },
-              { time: "0:50", label: "Diagnose + Match", text: "Agent shows: 3 orders, ₦1.8M at risk. Vector search returns Techmart (94%), Lagos Hub (87%), Gadget Wholesale (71%).", color: "#60A5FA" },
-              { time: "1:20", label: "Plan", text: "Option A: Techmart — 94%, 2-day, +3% price. Option B: Lagos Hub — 87%, 3-day, same price. Full rationale shown.", color: "#FB923C" },
-              { time: "1:50", label: "Execute", text: "Click Approve. 3 MongoDB records updated. Vendor email sent. Decision log written. All in real time.", color: "#F87171" },
-              { time: "2:20", label: "Verify + Close", text: "Resolution: 2m 47s, ₦54k cost delta, audit trail stored. \"Because your suppliers' problems shouldn't become your customers' problems.\"", color: "#34D399" },
+              { step: "01", label: "Connect your data", text: 'Open the dashboard and click "Seed Data" to load sample suppliers and orders, or point SupplyPulse at your existing MongoDB Atlas cluster.', color: "#818CF8" },
+              { step: "02", label: "Describe the disruption", text: 'Type naturally: "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday." No special syntax required.', color: "#FBBF24" },
+              { step: "03", label: "Review the analysis", text: "SupplyPulse surfaces every affected order, the total value at risk, and a ranked list of alternative suppliers with match scores and lead times.", color: "#60A5FA" },
+              { step: "04", label: "Pick your recovery option", text: "Option A, B, or C — each with a full rationale, delivery timeline, and price comparison. Ask follow-up questions before you decide.", color: "#FB923C" },
+              { step: "05", label: "Approve and execute", text: "Say the word. Orders are updated, a vendor email goes out, and the decision is recorded — all in one step, with a full audit trail.", color: "#F87171" },
+              { step: "06", label: "Track the outcome", text: "The dashboard shows time-to-resolve, cost delta, and supplier source for every incident. Your operations data grows smarter with each resolution.", color: "#34D399" },
             ].map((s, i) => (
-              <div key={s.time} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
+              <div key={s.step} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
                 <div className="text-right w-12 flex-shrink-0 pt-1">
-                  <span className="text-xs font-mono font-bold" style={{ color: s.color }}>{s.time}</span>
+                  <span className="text-xs font-mono font-bold" style={{ color: s.color }}>{s.step}</span>
                 </div>
                 <div className="glass-card rounded-xl p-4 flex-1 flex gap-3">
                   <div className="w-1.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
@@ -536,7 +526,7 @@ export default function LandingPage() {
                 <Activity className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{ color: "var(--text)" }}>
-                Ready to <span className="shimmer-text">win?</span>
+                Stop losing money<br />to <span className="shimmer-text">supply chain chaos.</span>
               </h2>
               <p className="text-lg mb-8" style={{ color: "var(--text-muted)" }}>
                 &ldquo;Because your suppliers&apos; problems shouldn&apos;t become your customers&apos; problems.&rdquo;
@@ -564,7 +554,7 @@ export default function LandingPage() {
             <span className="text-sm" style={{ color: "var(--text-muted)" }}>· AI Supply Chain Crisis Management</span>
           </div>
           <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-            MongoDB Track · Building Agents for Real-World Challenges · June 2026
+            Built with MongoDB Atlas · Gemini 2.0 Flash · Google Maps · Resend
           </div>
         </div>
       </footer>
