@@ -40,9 +40,11 @@ export async function POST() {
     await orders.deleteMany({});
     await logs.deleteMany({});
 
-    // Insert suppliers
+    // Insert suppliers with v3 schema (source, maps_place_id)
     const supplierDocs = SUPPLIERS.map((s) => ({
       ...s,
+      source: "user_added",
+      maps_place_id: null,
       profile_embedding: Array(768).fill(0).map(() => Math.random() - 0.5),
       created_at: new Date(),
     }));
@@ -60,20 +62,44 @@ export async function POST() {
     }));
     await orders.insertMany(orderDocs);
 
-    // Insert one sample decision log
-    await logs.insertOne({
-      disruption_type: "stockout",
-      affected_skus: ["SKU-ADP-301"],
-      original_supplier_id: chukwuemekaId,
-      original_supplier_name: "Chukwuemeka Electronics",
-      chosen_supplier_id: supplierIds[1],
-      chosen_supplier_name: "Techmart Supplies",
-      agent_rationale: "Techmart Supplies selected as primary alternative due to 94% semantic match on consumer electronics profile, 2-day lead time within deadline, and strong reliability score of 94. Located in Lagos for minimal logistics overhead.",
-      operator_approved: true,
-      time_to_resolve_mins: 3,
-      additional_cost_ngn: 32000,
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    });
+    // Insert sample decision logs (v3 schema)
+    await logs.insertMany([
+      {
+        disruption_type: "stockout",
+        affected_skus: ["SKU-ADP-301"],
+        original_supplier_id: chukwuemekaId,
+        original_supplier_name: "Chukwuemeka Electronics",
+        chosen_supplier_id: supplierIds[1],
+        chosen_supplier_name: "Techmart Supplies",
+        chosen_source: "user_db",
+        maps_results_used: false,
+        agent_rationale: "Techmart Supplies selected — 94% vector search match on consumer electronics, 2-day lead time within deadline, reliability score 94/100. Located in Lagos.",
+        match_score: 0.94,
+        operator_approved: true,
+        time_to_resolve_s: 167,
+        time_to_resolve_mins: 3,
+        cost_delta_ngn: 32000,
+        additional_cost_ngn: 32000,
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+      {
+        disruption_type: "late",
+        affected_skus: ["SKU-SPK-401"],
+        original_supplier_id: chukwuemekaId,
+        original_supplier_name: "Chukwuemeka Electronics",
+        chosen_supplier_name: "Lagos Electronics Hub",
+        chosen_source: "google_maps",
+        maps_results_used: true,
+        agent_rationale: "No DB match with 3+ results — Google Maps fallback used. Lagos Electronics Hub (★4.3, open now) selected. 3-day lead time, -5% price delta.",
+        match_score: 0.87,
+        operator_approved: true,
+        time_to_resolve_s: 203,
+        time_to_resolve_mins: 3,
+        cost_delta_ngn: -18000,
+        additional_cost_ngn: -18000,
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+    ]);
 
     return NextResponse.json({
       success: true,
