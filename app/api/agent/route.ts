@@ -92,8 +92,8 @@ export async function POST(req: NextRequest) {
     ) {
       userMessage =
         "Cannot connect to MongoDB. Check MONGODB_URI in .env.local and allowlist your IP in Atlas Network Access.";
-    } else if (errStr.includes("RESEND")) {
-      userMessage = "Resend API error. Check RESEND_API_KEY in .env.local.";
+    } else if (errStr.includes("GMAIL") || errStr.includes("nodemailer") || errStr.includes("535") || errStr.includes("auth")) {
+      userMessage = "Gmail sending failed. Check GMAIL_USER and GMAIL_APP_PASSWORD in .env.local. Make sure you used an App Password, not your real Gmail password.";
     } else if (errStr.includes("maps") || errStr.includes("GOOGLE_MAPS")) {
       userMessage =
         "Google Maps API error. Check GOOGLE_MAPS_API_KEY in .env.local. Agent will continue without Maps results.";

@@ -1,6 +1,17 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// ─── Gmail SMTP transporter ────────────────────────────────────────────────────
+// Uses a Gmail App Password — NOT your regular Gmail password.
+// Set up: myaccount.google.com → Security → 2-Step Verification → App passwords
+function createTransporter() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,   // your.email@gmail.com
+      pass: process.env.GMAIL_APP_PASSWORD, // 16-char app password from Google
+    },
+  });
+}
 
 export async function sendVendorEmail({
   to,
@@ -20,9 +31,11 @@ export async function sendVendorEmail({
   companyName?: string;
 }): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { data, error } = await resend.emails.send({
-      from: "SupplyPulse <onboarding@resend.dev>",
-      to: [to],
+    const transporter = createTransporter();
+
+    const info = await transporter.sendMail({
+      from: `"${companyName} via SupplyPulse" <${process.env.GMAIL_USER}>`,
+      to,
       subject: `Urgent Supply Request — ${skus.join(", ")} — Needed by ${deadline}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; border-radius: 12px;">
@@ -106,18 +119,14 @@ export async function sendVendorEmail({
               Sent via <strong style="color: #2563eb;">SupplyPulse</strong> — AI-Powered Supply Chain Crisis Management
             </p>
             <p style="color: #cbd5e1; font-size: 11px; margin: 4px 0 0;">
-              MongoDB Atlas · Gemini 2.0 Flash · Resend
+              MongoDB Atlas · Gemini 2.0 Flash · Gmail
             </p>
           </div>
         </div>
       `,
     });
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: info.messageId };
   } catch (err) {
     return { success: false, error: String(err) };
   }
