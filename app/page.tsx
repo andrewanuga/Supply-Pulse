@@ -1,316 +1,571 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import {
-  Zap,
-  Shield,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowRight,
-  Database,
-  Brain,
-  Mail,
-  Activity,
-  Clock,
-  ChevronRight,
-  Star,
+  Zap, ArrowRight, Activity, Brain, Database, Mail, Shield,
+  Clock, CheckCircle2, AlertTriangle, ChevronRight, Star,
+  TrendingUp, Users, Package, BarChart3, Cpu, Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
-function AnimatedCounter({
-  end, duration = 2000, prefix = "", suffix = "",
-}: { end: number; duration?: number; prefix?: string; suffix?: string; }) {
-  const [count, setCount] = useState(0);
+/* ── Hook: scroll reveal ────────────────────────────────────────────────── */
+function useReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll(".reveal,.reveal-left,.reveal-right,.reveal-scale");
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) (e.target as HTMLElement).classList.add("visible");
+        }),
+      { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  });
+}
+
+/* ── Animated number counter ─────────────────────────────────────────── */
+function Counter({
+  end,
+  suffix = "",
+  prefix = "",
+  duration = 1800,
+}: {
+  end: number;
+  suffix?: string;
+  prefix?: string;
+  duration?: number;
+}) {
+  const [n, setN] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const start = Date.now();
-        const tick = () => {
-          const elapsed = Date.now() - start;
-          const progress = Math.min(elapsed / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          setCount(Math.round(eased * end));
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
-    }, { threshold: 0.5 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !started.current) {
+          started.current = true;
+          const t0 = Date.now();
+          const tick = () => {
+            const p = Math.min((Date.now() - t0) / duration, 1);
+            setN(Math.round((1 - Math.pow(1 - p, 3)) * end));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    if (ref.current) io.observe(ref.current);
+    return () => io.disconnect();
   }, [end, duration]);
-  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
+  return (
+    <span ref={ref}>
+      {prefix}{n.toLocaleString()}{suffix}
+    </span>
+  );
 }
 
-function ParticleField() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const particles: Array<{ x: number; y: number; vx: number; vy: number; size: number; opacity: number; pulse: number; }> = [];
-    for (let i = 0; i < 80; i++) {
-      particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, size: Math.random() * 2 + 0.5, opacity: Math.random() * 0.5 + 0.1, pulse: Math.random() * Math.PI * 2 });
-    }
-    let animId: number;
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy; p.pulse += 0.02;
-        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
-        const opacity = p.opacity * (0.7 + 0.3 * Math.sin(p.pulse));
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(16,185,129,${opacity})`; ctx.fill();
-      });
-      particles.forEach((p1, i) => {
-        particles.slice(i + 1).forEach(p2 => {
-          const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-          if (dist < 120) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.strokeStyle = `rgba(16,185,129,${0.05 * (1 - dist / 120)})`; ctx.lineWidth = 1; ctx.stroke(); }
-        });
-      });
-      animId = requestAnimationFrame(animate);
-    };
-    animate();
-    const handleResize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-    window.addEventListener("resize", handleResize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", handleResize); };
+/* ── 3D tilt card ────────────────────────────────────────────────────── */
+function TiltCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 10}deg) translateZ(8px)`;
   }, []);
-  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ opacity: 0.6 }} />;
+  const onLeave = useCallback(() => {
+    if (ref.current) ref.current.style.transform = "rotateY(0) rotateX(0) translateZ(0)";
+  }, []);
+  return (
+    <div className="perspective-1000">
+      <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}
+        className={`tilt-card glass-card rounded-2xl ${className}`}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
-const terminalLines = [
-  { text: "[SENSE] Disruption detected: Supplier unavailability", color: "text-purple-400", delay: 0 },
-  { text: "[DIAGNOSE] Querying MongoDB → 3 orders, ₦1,800,000 at risk", color: "text-yellow-400", delay: 700 },
-  { text: "[MATCH] Running vector search on 30 supplier profiles...", color: "text-blue-400", delay: 1400 },
-  { text: "[MATCH] → Techmart Supplies: 94% match score", color: "text-emerald-400", delay: 2000 },
-  { text: "[MATCH] → Lagos Electronics Hub: 87% match score", color: "text-emerald-300", delay: 2200 },
-  { text: "[PLAN] Recovery options ranked by lead time + cost delta", color: "text-orange-400", delay: 2700 },
-  { text: "[EXECUTE] Operator approved → updating 3 order records...", color: "text-red-400", delay: 3400 },
-  { text: "[EXECUTE] Vendor email sent via Resend API ✓", color: "text-emerald-400", delay: 3900 },
-  { text: "[VERIFY] ✅ Resolved in 2m 47s | Cost delta: +₦54,000", color: "text-emerald-400", delay: 4500 },
+/* ── Hero terminal ───────────────────────────────────────────────────── */
+const termLines = [
+  { t: "[SENSE] Supplier unavailability detected", c: "#818CF8", d: 0 },
+  { t: "[DIAGNOSE] Querying MongoDB… 3 orders, ₦1,800,000 at risk", c: "#FBBF24", d: 700 },
+  { t: "[MATCH] $vectorSearch on 30 supplier embeddings…", c: "#60A5FA", d: 1400 },
+  { t: "  ↳ Techmart Supplies — 94% semantic match", c: "#34D399", d: 2000 },
+  { t: "  ↳ Lagos Electronics Hub — 87% match", c: "#34D399", d: 2300 },
+  { t: "[PLAN] Recovery plan generated with 3 ranked options", c: "#FB923C", d: 2800 },
+  { t: "[EXECUTE] Operator approved. Updating 3 records in MongoDB…", c: "#F87171", d: 3500 },
+  { t: "[EXECUTE] Vendor email sent via Resend API ✓", c: "#34D399", d: 4000 },
+  { t: "[VERIFY] ✅ Resolved in 2m 47s | Delta: +₦54,000", c: "#34D399", d: 4600 },
 ];
 
-function LiveTerminal() {
-  const [visibleLines, setVisibleLines] = useState(0);
+function HeroTerminal() {
+  const [lines, setLines] = useState(0);
   const [loop, setLoop] = useState(0);
   useEffect(() => {
-    setVisibleLines(0);
-    const timers = terminalLines.map((line, i) => setTimeout(() => setVisibleLines(i + 1), line.delay));
-    const resetTimer = setTimeout(() => setLoop(l => l + 1), 6500);
-    return () => { timers.forEach(clearTimeout); clearTimeout(resetTimer); };
+    setLines(0);
+    const timers = termLines.map((l, i) => setTimeout(() => setLines(i + 1), l.d));
+    const reset = setTimeout(() => setLoop((n) => n + 1), 7500);
+    return () => { timers.forEach(clearTimeout); clearTimeout(reset); };
   }, [loop]);
   return (
-    <div className="glass-card rounded-xl overflow-hidden font-mono text-sm">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
-        <div className="w-3 h-3 rounded-full bg-red-500/70" /><div className="w-3 h-3 rounded-full bg-yellow-500/70" /><div className="w-3 h-3 rounded-full bg-emerald-500/70" />
-        <span className="ml-2 text-white/30 text-xs">supply-pulse agent — live</span>
-        <div className="ml-auto flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /><span className="text-emerald-400 text-xs">running</span></div>
+    <div className="terminal w-full max-w-xl mx-auto">
+      <div className="terminal-scan" />
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(59,130,246,0.15)]">
+        <div className="w-3 h-3 rounded-full bg-red-500/70" />
+        <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+        <div className="w-3 h-3 rounded-full bg-green-500/70" />
+        <span className="ml-3 text-[rgba(148,163,184,0.5)] text-xs font-mono">supply-pulse agent</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+          <span className="text-xs text-blue-400 font-mono">live</span>
+        </div>
       </div>
-      <div className="p-4 space-y-1.5 min-h-[220px]">
-        {terminalLines.slice(0, visibleLines).map((line, i) => (
-          <div key={`${loop}-${i}`} className={`${line.color} text-xs leading-relaxed animate-slide-up`}><span className="text-white/20 mr-2">›</span>{line.text}</div>
+      <div className="p-4 space-y-1.5 min-h-[200px]">
+        {termLines.slice(0, lines).map((l, i) => (
+          <div key={`${loop}-${i}`} className="text-xs leading-relaxed font-mono animate-slide-up" style={{ color: l.c }}>
+            <span className="text-[rgba(148,163,184,0.3)] mr-2 select-none">›</span>{l.t}
+          </div>
         ))}
-        {visibleLines < terminalLines.length && <div className="flex items-center gap-1 text-white/30 text-xs"><span>›</span><span className="inline-block w-2 h-3 bg-emerald-400/50 animate-pulse" /></div>}
+        {lines < termLines.length && (
+          <div className="flex items-center gap-1 text-xs font-mono text-[rgba(148,163,184,0.3)]">
+            <span>›</span>
+            <span className="inline-block w-2 h-3 bg-blue-400/60 animate-blink" />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function FeatureCard({ icon: Icon, title, description, badge, delay = 0 }: { icon: React.ElementType; title: string; description: string; badge?: string; delay?: number; }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setTimeout(() => setVisible(true), delay); observer.disconnect(); } }, { threshold: 0.2 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [delay]);
+/* ── Floating 3D shapes ───────────────────────────────────────────────── */
+function FloatingShapes() {
   return (
-    <div ref={ref} className={`glass-card rounded-2xl p-6 transition-all duration-700 group hover:glow-border hover:scale-[1.02] cursor-default ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: `${delay}ms` }}>
-      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
-        <Icon className="w-5 h-5 text-emerald-400" />
-      </div>
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="font-semibold text-white">{title}</h3>
-        {badge && <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5">{badge}</span>}
-      </div>
-      <p className="text-sm text-white/50 leading-relaxed">{description}</p>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="orb w-80 h-80 top-10 -left-20" style={{ background: "rgba(37,99,235,0.12)", animationDelay: "0s" }} />
+      <div className="orb w-60 h-60 top-1/3 right-0" style={{ background: "rgba(129,140,248,0.10)", animationDelay: "3s" }} />
+      <div className="orb w-96 h-96 bottom-0 left-1/3" style={{ background: "rgba(59,130,246,0.08)", animationDelay: "6s" }} />
+      <div className="absolute top-24 right-12 w-16 h-16 rounded-2xl border border-blue-500/30 bg-blue-500/5 backdrop-blur-sm rotate-12 animate-float hidden xl:block"
+        style={{ boxShadow: "0 8px 32px rgba(37,99,235,0.15)", animationDelay: "1s" }} />
+      <div className="absolute top-1/2 right-24 w-10 h-10 rounded-xl border border-indigo-500/30 bg-indigo-500/5 -rotate-6 animate-float hidden xl:block"
+        style={{ boxShadow: "0 4px 16px rgba(99,102,241,0.15)", animationDelay: "2s" }} />
+      <div className="absolute bottom-32 left-16 w-12 h-12 rounded-full border border-blue-400/20 bg-blue-400/5 animate-float-slow hidden xl:block"
+        style={{ animationDelay: "0.5s" }} />
     </div>
   );
 }
 
+/* ── Main Page ────────────────────────────────────────────────────────── */
 export default function LandingPage() {
+  useReveal();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => setMounted(true), []);
+
+  const heroRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!terminalRef.current || !heroRef.current) return;
+      const scrollY = window.scrollY;
+      const heroH = heroRef.current.offsetHeight;
+      if (scrollY < heroH) {
+        terminalRef.current.style.transform = `translateY(${scrollY * 0.12}px)`;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#020817] text-white overflow-x-hidden">
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-xl bg-[#020817]/80">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center animate-pulse-glow"><Activity className="w-4 h-4 text-white" /></div>
-          <span className="font-bold text-lg tracking-tight">SupplyPulse</span>
-        </div>
-        <div className="hidden md:flex items-center gap-8 text-sm text-white/50">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-          <a href="#stack" className="hover:text-white transition-colors">Tech Stack</a>
-        </div>
-        <Link href="/dashboard"><Button size="sm" variant="glow" className="gap-1.5">Open Dashboard <ArrowRight className="w-3.5 h-3.5" /></Button></Link>
-      </nav>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--bg)" }}>
 
-      {/* Hero */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20 overflow-hidden">
-        <ParticleField />
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-emerald-500/5 blur-3xl" />
-          <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-3xl" />
-        </div>
-        <div className="relative z-10 max-w-5xl mx-auto text-center">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-xs font-medium mb-8 transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <Star className="w-3 h-3" />MongoDB Track · Hackathon: Building Agents for Real-World Challenges
+      {/* ── Navbar ──────────────────────────────────────────────────── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--border)]">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl btn-glow flex items-center justify-center">
+              <Activity className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-lg tracking-tight" style={{ color: "var(--text)" }}>SupplyPulse</span>
           </div>
-          <h1 className={`text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none mb-6 transition-all duration-700 delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <span className="text-white">Your suppliers&apos; </span><br /><span className="shimmer-text">problems end here.</span>
-          </h1>
-          <p className={`text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed transition-all duration-700 delay-200 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            SupplyPulse is an AI agent that resolves Nigerian SME supply chain crises in under 3 minutes — powered by MongoDB vector search, Gemini reasoning, and autonomous execution.
-          </p>
-          <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 transition-all duration-700 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <Link href="/dashboard"><Button size="xl" variant="glow" className="gap-2 w-full sm:w-auto"><Zap className="w-5 h-5" />Launch Agent Dashboard</Button></Link>
-            <a href="#how-it-works"><Button size="xl" variant="outline" className="gap-2 w-full sm:w-auto">See How It Works<ChevronRight className="w-4 h-4" /></Button></a>
-          </div>
-          <div className={`grid grid-cols-3 gap-6 max-w-lg mx-auto transition-all duration-700 delay-400 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            {[{ label: "Avg. resolution", value: <AnimatedCounter end={3} suffix="min" /> }, { label: "Suppliers indexed", value: <AnimatedCounter end={30} suffix="+" /> }, { label: "Vector match acc.", value: <AnimatedCounter end={94} suffix="%" /> }].map(s => (
-              <div key={s.label} className="text-center"><div className="text-2xl font-bold text-emerald-400">{s.value}</div><div className="text-xs text-white/30 mt-1">{s.label}</div></div>
+          <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--text-muted)" }}>
+            {["Features", "How It Works", "Stack"].map((label) => (
+              <a key={label} href={`#${label.toLowerCase().replace(/\s/g, "-")}`}
+                className="hover:text-[var(--accent)] transition-colors">{label}</a>
             ))}
           </div>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link href="/dashboard">
+              <Button size="sm" className="gap-1.5">
+                Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className={`relative z-10 mt-16 w-full max-w-2xl mx-auto transition-all duration-700 delay-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          <LiveTerminal />
-        </div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/20 animate-float">
-          <div className="w-px h-8 bg-gradient-to-b from-transparent to-emerald-500/50" /><span className="text-xs">scroll</span>
-        </div>
-      </section>
+      </nav>
 
-      {/* Problem */}
-      <section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="glass-card rounded-3xl p-8 md:p-12 border border-red-500/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="flex items-center gap-3 mb-6"><AlertTriangle className="w-5 h-5 text-red-400" /><span className="text-sm font-medium text-red-400 uppercase tracking-wider">The Problem</span></div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">Nigerian SMEs lose <span className="text-red-400">15–30% of revenue</span> annually to supply chain disruptions.</h2>
-            <p className="text-white/50 text-lg leading-relaxed mb-8 max-w-2xl">A supplier ghosts a ₦2.4M order. The response: 6 hours of panicked WhatsApp messages, spreadsheet hunting, re-typed emails, and guesswork. No audit trail. No speed. No intelligence.</p>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[{ icon: AlertTriangle, label: "Stockouts discovered when customers complain" }, { icon: Database, label: "Supplier knowledge lives in one person's head" }, { icon: Mail, label: "Vendor emails re-drafted from scratch every crisis" }, { icon: Shield, label: "Zero decision audit trail for accountability" }].map(item => (
-                <div key={item.label} className="flex items-start gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10"><item.icon className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" /><span className="text-xs text-white/50 leading-relaxed">{item.label}</span></div>
-              ))}
+      {/* ── HERO ────────────────────────────────────────────────────── */}
+      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden dot-grid mesh-bg">
+        <FloatingShapes />
+        <div className="relative z-10 max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center w-full">
+          {/* Left */}
+          <div className={`transition-all duration-1000 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
+            <div className="badge mb-6 w-fit">
+              <Star className="w-3 h-3" />
+              MongoDB Track · June 2026 Hackathon
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-xs font-medium mb-4"><Zap className="w-3 h-3" />6-Step Agent Loop</div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white">From crisis to resolved in <span className="shimmer-text">3 minutes.</span></h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div className="space-y-6">
+            <h1 className="text-5xl md:text-6xl xl:text-7xl font-bold leading-tight tracking-tight mb-6" style={{ color: "var(--text)" }}>
+              Supply chain<br />
+              <span className="shimmer-text">crises, resolved</span><br />
+              in 3 minutes.
+            </h1>
+            <p className="text-lg md:text-xl mb-8 leading-relaxed max-w-lg" style={{ color: "var(--text-muted)" }}>
+              SupplyPulse is an AI agent that detects disruptions, matches alternative suppliers
+              via MongoDB vector search, and executes the full recovery — autonomously.
+            </p>
+            <div className="flex flex-wrap gap-4 mb-10">
+              <Link href="/dashboard">
+                <Button size="lg" className="gap-2">
+                  <Zap className="w-4 h-4" /> Launch Dashboard
+                </Button>
+              </Link>
+              <a href="#how-it-works">
+                <Button size="lg" variant="outline" className="gap-2">
+                  See How It Works <ChevronRight className="w-4 h-4" />
+                </Button>
+              </a>
+            </div>
+            <div className="flex gap-8">
               {[
-                { step: "01", label: "SENSE", desc: "Operator describes the disruption in plain English. Agent classifies: stockout, late delivery, price spike, or unavailability.", color: "border-purple-500/50 text-purple-400 bg-purple-500/5" },
-                { step: "02", label: "DIAGNOSE", desc: "Agent queries MongoDB to surface all affected orders, SKUs, quantities, and total ₦ value at risk.", color: "border-yellow-500/50 text-yellow-400 bg-yellow-500/5" },
-                { step: "03", label: "MATCH", desc: "MongoDB Atlas Vector Search runs semantic similarity on supplier embeddings — returns top-3 alternatives with match scores.", color: "border-blue-500/50 text-blue-400 bg-blue-500/5" },
-                { step: "04", label: "PLAN", desc: "Gemini reasons over matches and generates a ranked recovery plan with trade-offs: lead time, price delta, reliability score.", color: "border-orange-500/50 text-orange-400 bg-orange-500/5" },
-                { step: "05", label: "EXECUTE", desc: "On operator approval: updates all order records in MongoDB, sends vendor email via Resend, logs the decision.", color: "border-red-500/50 text-red-400 bg-red-500/5" },
-                { step: "06", label: "VERIFY", desc: "Resolution card: time-to-resolve, cost impact, chosen supplier, full audit trail stored in MongoDB.", color: "border-emerald-500/50 text-emerald-400 bg-emerald-500/5" },
-              ].map(s => (
-                <div key={s.step} className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 border ${s.color}`}>{s.step}</div>
-                  <div><div className="font-semibold text-white text-sm mb-1">{s.label}</div><div className="text-xs text-white/40 leading-relaxed">{s.desc}</div></div>
+                { v: <Counter end={3} suffix="min" />, l: "Resolution time" },
+                { v: <Counter end={94} suffix="%" />, l: "Match accuracy" },
+                { v: <Counter end={30} suffix="+" />, l: "Suppliers indexed" },
+              ].map((s) => (
+                <div key={s.l}>
+                  <div className="text-2xl font-bold" style={{ color: "var(--accent)" }}>{s.v}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{s.l}</div>
                 </div>
               ))}
             </div>
-            <div className="sticky top-24 space-y-4">
-              <LiveTerminal />
-              <div className="glass-card rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3"><span className="text-xs text-white/40 font-medium uppercase tracking-wider">Resolution Summary</span><CheckCircle2 className="w-4 h-4 text-emerald-400" /></div>
-                <div className="space-y-2">
-                  {[{ label: "Time to resolve", value: "2m 47s", color: "text-emerald-400" }, { label: "Supplier chosen", value: "Techmart Supplies", color: "text-blue-400" }, { label: "Match score", value: "94%", color: "text-emerald-400" }, { label: "Orders updated", value: "3 records", color: "text-white" }, { label: "Email sent", value: "✓ Delivered", color: "text-emerald-400" }, { label: "Additional cost", value: "₦54,000", color: "text-yellow-400" }].map(row => (
-                    <div key={row.label} className="flex items-center justify-between py-1 border-b border-white/5 last:border-0"><span className="text-xs text-white/40">{row.label}</span><span className={`text-xs font-medium ${row.color}`}>{row.value}</span></div>
-                  ))}
+          </div>
+          {/* Right — terminal */}
+          <div ref={terminalRef} className={`will-change-transform transition-all duration-1000 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"}`}>
+            <HeroTerminal />
+            <div className="mt-4 glass-card rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
                 </div>
+                <div>
+                  <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>Disruption Resolved</div>
+                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>Techmart Supplies · 94% match</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-green-400">2m 47s</div>
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>vs. 6+ hours</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Scroll hint */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-float-slow"
+          style={{ color: "var(--text-muted)" }}>
+          <div className="w-px h-10 bg-gradient-to-b from-transparent to-[var(--accent)]" />
+          <span className="text-xs uppercase tracking-widest">Scroll</span>
+        </div>
+      </section>
+
+      {/* ── PROBLEM ─────────────────────────────────────────────────── */}
+      <section className="section" style={{ background: "var(--bg-2)" }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="reveal text-center mb-16">
+            <div className="badge mb-4 mx-auto w-fit" style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444" }}>
+              <AlertTriangle className="w-3 h-3" /> The Problem
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text)" }}>
+              Nigerian SMEs lose{" "}
+              <span style={{ color: "#EF4444" }}>₦billions annually</span><br />
+              to supply chain chaos.
+            </h2>
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: "var(--text-muted)" }}>
+              15–30% of revenue disappears every year. The response to every crisis: 6 hours of panic, WhatsApp messages, and spreadsheet hunts.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-16">
+            {[
+              { icon: AlertTriangle, title: "Stockouts discovered too late", desc: "Operators find out when a customer complains — not before.", side: "reveal-left", delay: 0 },
+              { icon: Users, title: "Knowledge in one person's head", desc: "No structured supplier fallback. If that person is unavailable, the whole chain breaks.", side: "reveal-right", delay: 100 },
+              { icon: Mail, title: "Vendor emails written from scratch", desc: "Every single crisis. Same message. Re-typed. Wasting precious hours.", side: "reveal-left", delay: 200 },
+              { icon: Shield, title: "Zero audit trail", desc: "Owners can't review what happened, why a supplier was chosen, or who approved what.", side: "reveal-right", delay: 300 },
+            ].map((p) => (
+              <div key={p.title} className={`${p.side} glass-card rounded-2xl p-6 flex gap-4`} style={{ transitionDelay: `${p.delay}ms` }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  <p.icon className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1" style={{ color: "var(--text)" }}>{p.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{p.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="reveal glass-card rounded-3xl p-8 text-center"
+            style={{ borderColor: "rgba(239,68,68,0.15)", background: "rgba(239,68,68,0.03)" }}>
+            <div className="text-6xl md:text-8xl font-black mb-2" style={{ color: "var(--text)" }}>
+              <Counter prefix="₦" end={24} suffix="M" />
+            </div>
+            <div className="text-lg" style={{ color: "var(--text-muted)" }}>
+              Average annual supply chain loss for a mid-size Nigerian SME
+            </div>
+            <div className="mt-4 text-sm font-semibold text-red-400">
+              That&apos;s revenue gone. Not cost. Revenue.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ────────────────────────────────────────────── */}
+      <section id="how-it-works" className="section">
+        <div className="max-w-6xl mx-auto">
+          <div className="reveal text-center mb-20">
+            <div className="badge mb-4 mx-auto w-fit"><Zap className="w-3 h-3" />Agent Loop</div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text)" }}>
+              6 steps. <span className="shimmer-text">Under 3 minutes.</span>
+            </h2>
+            <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--text-muted)" }}>
+              A true multi-step reasoning agent — not a chatbot wrapper. Every step is a real tool call with real MongoDB writes.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div className="space-y-4">
+              {[
+                { n: "01", label: "SENSE", desc: "Plain-English disruption intake. Agent classifies type: stockout, late delivery, price spike, or supplier unavailability.", color: "#818CF8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.25)" },
+                { n: "02", label: "DIAGNOSE", desc: "Agent calls MongoDB find() — surfaces all affected orders, SKUs, quantities, and ₦ value at risk in real time.", color: "#FBBF24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
+                { n: "03", label: "MATCH", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings. Returns top-3 semantically similar alternatives with scores.", color: "#60A5FA", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
+                { n: "04", label: "PLAN", desc: "Gemini 2.0 Flash reasons over matched suppliers. Generates ranked recovery plan with lead time, price delta, and reliability.", color: "#FB923C", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.25)" },
+                { n: "05", label: "EXECUTE", desc: "Human-in-the-loop approval gate. On confirm: updateMany() on MongoDB, vendor email via Resend, insertOne() decision log.", color: "#F87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+                { n: "06", label: "VERIFY", desc: "Resolution card surfaces: time-to-resolve, cost delta, supplier chosen, full audit trail stored in MongoDB forever.", color: "#34D399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.25)" },
+              ].map((s, i) => (
+                <div key={s.n} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
+                  <div className="relative flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
+                      {s.n}
+                    </div>
+                    {i < 5 && (
+                      <div className="w-px flex-1 mt-2"
+                        style={{ background: `linear-gradient(180deg, ${s.color}30, transparent)`, minHeight: "24px" }} />
+                    )}
+                  </div>
+                  <div className="pb-4">
+                    <div className="font-bold text-sm mb-1" style={{ color: s.color }}>{s.label}</div>
+                    <div className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="lg:sticky lg:top-28 space-y-4 reveal-right">
+              <HeroTerminal />
+              <div className="glass-card rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Resolution Summary</span>
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                </div>
+                {[
+                  { l: "Time to resolve", v: "2m 47s", c: "text-green-400" },
+                  { l: "Supplier chosen", v: "Techmart Supplies", c: "" },
+                  { l: "Match score", v: "94%", c: "text-green-400" },
+                  { l: "Orders updated", v: "3 records in MongoDB", c: "" },
+                  { l: "Email sent", v: "✓ via Resend", c: "text-green-400" },
+                  { l: "Additional cost", v: "+₦54,000", c: "text-yellow-400" },
+                  { l: "Audit log", v: "Stored ✓", c: "text-green-400" },
+                ].map((r) => (
+                  <div key={r.l} className="flex justify-between py-2 border-b text-sm" style={{ borderColor: "var(--border-2)" }}>
+                    <span style={{ color: "var(--text-muted)" }}>{r.l}</span>
+                    <span className={`font-medium ${r.c}`} style={!r.c ? { color: "var(--text)" } : {}}>{r.v}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16"><h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Every feature you need. Nothing you don&apos;t.</h2><p className="text-white/40 max-w-xl mx-auto">Built for a 5-day hackathon sprint. All MUST features shipped.</p></div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { icon: Brain, title: "Natural Language Intake", description: "Describe a disruption in plain English. The agent classifies and acts — no forms, no clicks.", badge: "F-01", delay: 0 },
-              { icon: Database, title: "MongoDB Vector Search", description: "Semantic supplier matching using 768-dim embeddings. Finds the best alternative even with imperfect data.", badge: "F-03 · Core", delay: 100 },
-              { icon: TrendingUp, title: "Ranked Recovery Plans", description: "Gemini reasons over matched suppliers and presents ranked options with trade-off rationale.", badge: "F-04", delay: 200 },
-              { icon: Shield, title: "Human-in-the-Loop", description: "No write operations happen without operator approval. You stay in control. Always.", badge: "F-05", delay: 300 },
-              { icon: Mail, title: "Auto Vendor Emails", description: "Professional vendor communications drafted and sent via Resend API on approval.", badge: "F-07", delay: 400 },
-              { icon: Clock, title: "Full Audit Trail", description: "Every agent decision logged to MongoDB with timestamp, rationale, and operator ID.", badge: "F-08", delay: 500 },
-            ].map(f => <FeatureCard key={f.title} {...f} />)}
+      {/* ── FEATURES ────────────────────────────────────────────────── */}
+      <section id="features" className="section" style={{ background: "var(--bg-2)" }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="reveal text-center mb-16">
+            <div className="badge mb-4 mx-auto w-fit"><Brain className="w-3 h-3" />Features</div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text)" }}>
+              Every feature you need.<br /><span className="gradient-text">Nothing you don&apos;t.</span>
+            </h2>
+            <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--text-muted)" }}>
+              Built lean for a 5-day hackathon. All 8 MUST-have features shipped clean.
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* Stack */}
-      <section id="stack" className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16"><h2 className="text-3xl font-bold text-white mb-4">Built on the right stack.</h2><p className="text-white/40">Every tool chosen for a reason. No bloat.</p></div>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { name: "MongoDB Atlas + MCP", role: "Vector search + document ops", detail: "$vectorSearch on supplier embeddings is the core intelligence layer — not just a database.", color: "border-green-500/20 bg-green-500/5", dot: "bg-green-400" },
-              { name: "Gemini 2.0 Flash", role: "Multi-step reasoning + function calling", detail: "Orchestrates the full 6-step plan loop with structured tool call chains.", color: "border-blue-500/20 bg-blue-500/5", dot: "bg-blue-400" },
-              { name: "Next.js 14 / TypeScript", role: "Frontend + API routes", detail: "App router with server-side API routes. Type-safe end to end.", color: "border-white/10 bg-white/5", dot: "bg-white" },
-              { name: "Resend API", role: "Automated vendor emails", detail: "Professional email delivery on approval. Fully logged in the audit trail.", color: "border-purple-500/20 bg-purple-500/5", dot: "bg-purple-400" },
-            ].map(t => (
-              <div key={t.name} className={`glass-card rounded-2xl p-6 border ${t.color} flex gap-4`}><div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${t.dot}`} /><div><div className="font-semibold text-white">{t.name}</div><div className="text-xs text-white/40 mb-2">{t.role}</div><div className="text-sm text-white/60 leading-relaxed">{t.detail}</div></div></div>
+              { icon: Brain, id: "F-01", title: "Natural Language Intake", desc: "Describe any disruption in plain English. The agent classifies, reasons, and acts — no forms, no dropdowns." },
+              { icon: Database, id: "F-03 ★", title: "Vector Search Matching", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings. Semantic matching finds the right supplier even with imperfect data." },
+              { icon: TrendingUp, id: "F-04", title: "Ranked Recovery Plans", desc: "Gemini 2.0 Flash reasons over candidates and presents Option A/B/C with trade-off rationale in plain English." },
+              { icon: Shield, id: "F-05", title: "Human-in-the-Loop", desc: "Zero write operations happen without your explicit approval. You stay in control, always." },
+              { icon: Mail, id: "F-07", title: "Auto Vendor Emails", desc: "Professional vendor communication drafted and sent via Resend API the moment you approve. Logged in the audit trail." },
+              { icon: Clock, id: "F-08", title: "Full Audit Trail", desc: "Every agent decision written to MongoDB with timestamp, rationale, chosen supplier, cost delta, and operator ID." },
+            ].map((f) => (
+              <TiltCard key={f.title} className="p-6">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                  style={{ background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.2)" }}>
+                  <f.icon className="w-5 h-5" style={{ color: "var(--accent)" }} />
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold" style={{ color: "var(--text)" }}>{f.title}</h3>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                    style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)", border: "1px solid rgba(37,99,235,0.2)" }}>{f.id}</span>
+                </div>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{f.desc}</p>
+              </TiltCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 px-6">
+      {/* ── TECH STACK ──────────────────────────────────────────────── */}
+      <section id="stack" className="section">
+        <div className="max-w-6xl mx-auto">
+          <div className="reveal text-center mb-16">
+            <div className="badge mb-4 mx-auto w-fit"><Cpu className="w-3 h-3" />Tech Stack</div>
+            <h2 className="text-4xl font-bold mb-4" style={{ color: "var(--text)" }}>
+              The <span className="gradient-text">actual</span> stack.
+            </h2>
+            <p className="text-base max-w-xl mx-auto" style={{ color: "var(--text-muted)" }}>
+              No Google Cloud Agent Builder — we use Gemini SDK directly for function calling. Simpler, faster, fully controllable.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { name: "MongoDB Atlas", role: "Vector Search + Document DB", detail: "$vectorSearch on supplier embeddings is the core intelligence. Also handles orders, audit logs, decision records.", icon: Database, color: "#00ED64", accent: "rgba(0,237,100,0.12)", border: "rgba(0,237,100,0.2)" },
+              { name: "Gemini 2.0 Flash", role: "LLM + Function Calling", detail: "5 real tool calls per disruption: query, vector search, 2x writes, email send. Full multi-step chain.", icon: Brain, color: "#4285F4", accent: "rgba(66,133,244,0.12)", border: "rgba(66,133,244,0.2)" },
+              { name: "Next.js 16 / TypeScript", role: "Frontend + API Routes", detail: "App router. Server-side API routes call MongoDB and Gemini directly. Type-safe end to end.", icon: Globe, color: "#E2E8F0", accent: "rgba(226,232,240,0.08)", border: "rgba(226,232,240,0.15)" },
+              { name: "Resend API", role: "Automated Vendor Emails", detail: "Professional email on approval. Logged to MongoDB audit trail. Free tier: 3,000/month.", icon: Mail, color: "#FF6B6B", accent: "rgba(255,107,107,0.12)", border: "rgba(255,107,107,0.2)" },
+              { name: "Vercel", role: "Deployment", detail: "Zero-config Next.js deployment. Environment variables via Vercel dashboard. Git push = live.", icon: Zap, color: "#E2E8F0", accent: "rgba(226,232,240,0.08)", border: "rgba(226,232,240,0.12)" },
+              { name: "Tailwind CSS v4", role: "Styling System", detail: "CSS-first, zero runtime. Dark/light mode via CSS variables. 3D effects via CSS transforms.", icon: BarChart3, color: "#38BDF8", accent: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)" },
+            ].map((t, i) => (
+              <div key={t.name} className="reveal glass-card rounded-2xl p-5 flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: t.accent, border: `1px solid ${t.border}` }}>
+                  <t.icon className="w-5 h-5" style={{ color: t.color }} />
+                </div>
+                <div>
+                  <div className="font-semibold text-sm mb-0.5" style={{ color: "var(--text)" }}>{t.name}</div>
+                  <div className="text-xs mb-2" style={{ color: t.color }}>{t.role}</div>
+                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{t.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="reveal mt-8 glass-card rounded-2xl p-5 flex flex-wrap gap-4 items-center">
+            <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Removed from PRD (not used):</span>
+            {["Google Cloud Agent Builder", "Clerk / Supabase Auth"].map((t) => (
+              <span key={t} className="text-xs px-3 py-1 rounded-full line-through"
+                style={{ background: "rgba(239,68,68,0.08)", color: "rgba(239,68,68,0.6)", border: "1px solid rgba(239,68,68,0.15)" }}>{t}</span>
+            ))}
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>— Gemini SDK + no auth needed for demo.</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DEMO SCRIPT ─────────────────────────────────────────────── */}
+      <section className="section" style={{ background: "var(--bg-2)" }}>
+        <div className="max-w-4xl mx-auto">
+          <div className="reveal text-center mb-12">
+            <div className="badge mb-4 mx-auto w-fit"><Package className="w-3 h-3" />3-Minute Demo Script</div>
+            <h2 className="text-4xl font-bold mb-4" style={{ color: "var(--text)" }}>What judges will see.</h2>
+            <p className="text-base" style={{ color: "var(--text-muted)" }}>
+              Practice this exactly. It&apos;s designed to maximize WOW per second.
+            </p>
+          </div>
+          <div className="space-y-4">
+            {[
+              { time: "0:00", label: "Hook", text: '"A supplier just ghosted a ₦2.4M order of electronics stock. Watch SupplyPulse resolve it in under 3 minutes."', color: "#818CF8" },
+              { time: "0:20", label: "Intake", text: 'Type: "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday."', color: "#FBBF24" },
+              { time: "0:50", label: "Diagnose + Match", text: "Agent shows: 3 orders, ₦1.8M at risk. Vector search returns Techmart (94%), Lagos Hub (87%), Gadget Wholesale (71%).", color: "#60A5FA" },
+              { time: "1:20", label: "Plan", text: "Option A: Techmart — 94%, 2-day, +3% price. Option B: Lagos Hub — 87%, 3-day, same price. Full rationale shown.", color: "#FB923C" },
+              { time: "1:50", label: "Execute", text: "Click Approve. 3 MongoDB records updated. Vendor email sent. Decision log written. All in real time.", color: "#F87171" },
+              { time: "2:20", label: "Verify + Close", text: "Resolution: 2m 47s, ₦54k cost delta, audit trail stored. \"Because your suppliers' problems shouldn't become your customers' problems.\"", color: "#34D399" },
+            ].map((s, i) => (
+              <div key={s.time} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
+                <div className="text-right w-12 flex-shrink-0 pt-1">
+                  <span className="text-xs font-mono font-bold" style={{ color: s.color }}>{s.time}</span>
+                </div>
+                <div className="glass-card rounded-xl p-4 flex-1 flex gap-3">
+                  <div className="w-1.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                  <div>
+                    <div className="text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: s.color }}>{s.label}</div>
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>{s.text}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ─────────────────────────────────────────────────────── */}
+      <section className="section">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="glass-card rounded-3xl p-12 glow-border relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none rounded-3xl" />
+          <div className="reveal glass-card rounded-3xl p-12 relative overflow-hidden">
+            <div className="orb w-64 h-64 -top-16 -left-16" style={{ background: "rgba(37,99,235,0.15)" }} />
+            <div className="orb w-48 h-48 -bottom-8 -right-8" style={{ background: "rgba(129,140,248,0.12)", animationDelay: "3s" }} />
             <div className="relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6 animate-pulse-glow"><Activity className="w-8 h-8 text-emerald-400" /></div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to resolve your next crisis?</h2>
-              <p className="text-white/50 mb-8 text-lg">&ldquo;Because your suppliers&apos; problems shouldn&apos;t become your customers&apos; problems.&rdquo;</p>
-              <Link href="/dashboard"><Button size="xl" variant="glow" className="gap-2"><Zap className="w-5 h-5" />Open SupplyPulse Dashboard<ArrowRight className="w-5 h-5" /></Button></Link>
+              <div className="w-16 h-16 rounded-2xl btn-glow flex items-center justify-center mx-auto mb-6 animate-pulse-ring">
+                <Activity className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{ color: "var(--text)" }}>
+                Ready to <span className="shimmer-text">win?</span>
+              </h2>
+              <p className="text-lg mb-8" style={{ color: "var(--text-muted)" }}>
+                &ldquo;Because your suppliers&apos; problems shouldn&apos;t become your customers&apos; problems.&rdquo;
+              </p>
+              <Link href="/dashboard">
+                <Button size="xl" className="gap-2 text-base">
+                  <Zap className="w-5 h-5" />
+                  Open SupplyPulse Dashboard
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <footer className="py-8 px-6 border-t border-white/5">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center"><Activity className="w-3 h-3 text-white" /></div><span className="text-sm font-semibold">SupplyPulse</span><span className="text-white/30 text-sm">· AI Supply Chain Crisis Management</span></div>
-          <div className="text-xs text-white/20">MongoDB Track · Building Agents for Real-World Challenges · June 2026</div>
+      {/* ── FOOTER ──────────────────────────────────────────────────── */}
+      <footer className="py-8 px-6 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg btn-glow flex items-center justify-center">
+              <Activity className="w-3 h-3 text-white" />
+            </div>
+            <span className="font-bold text-sm" style={{ color: "var(--text)" }}>SupplyPulse</span>
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>· AI Supply Chain Crisis Management</span>
+          </div>
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+            MongoDB Track · Building Agents for Real-World Challenges · June 2026
+          </div>
         </div>
       </footer>
     </div>
   );
 }
-
