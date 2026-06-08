@@ -90,7 +90,7 @@ def main():
         print(f"  [{i+1}/{len(SUPPLIERS)}] {s['name']}...", end=" ", flush=True)
         profile_text = build_profile_text(s)
         embedding = get_embedding(profile_text)
-        doc = {**s, "profile_embedding": embedding, "created_at": datetime.now()}
+        doc = {**s, "source": "user_added", "maps_place_id": None, "profile_embedding": embedding, "created_at": datetime.now()}
         supplier_docs.append(doc)
         print(f"✓ ({len(embedding)}d)")
         time.sleep(0.1)  # Rate limit
@@ -144,21 +144,45 @@ def main():
     db.orders.insert_many(order_docs)
     print(f"✅ Inserted {len(order_docs)} orders")
 
-    # Sample decision log
-    db.decision_logs.insert_one({
-        "disruption_type": "stockout",
-        "affected_skus": ["SKU-ADP-301"],
-        "original_supplier_id": chukwuemeka_id,
-        "original_supplier_name": "Chukwuemeka Electronics",
-        "chosen_supplier_id": supplier_ids[1],
-        "chosen_supplier_name": "Techmart Supplies",
-        "agent_rationale": "Techmart Supplies selected as primary alternative due to 94% semantic match on consumer electronics profile, 2-day lead time within deadline, and strong reliability score of 94. Located in Lagos for minimal logistics overhead.",
-        "operator_approved": True,
-        "time_to_resolve_mins": 3,
-        "additional_cost_ngn": 32000,
-        "created_at": datetime.now() - timedelta(days=2),
-    })
-    print("✅ Sample decision log inserted")
+    # Sample decision logs (v3 schema)
+    db.decision_logs.insert_many([
+        {
+            "disruption_type": "stockout",
+            "affected_skus": ["SKU-ADP-301"],
+            "original_supplier_id": chukwuemeka_id,
+            "original_supplier_name": "Chukwuemeka Electronics",
+            "chosen_supplier_id": supplier_ids[1],
+            "chosen_supplier_name": "Techmart Supplies",
+            "chosen_source": "user_db",
+            "maps_results_used": False,
+            "agent_rationale": "Techmart Supplies selected — 94% vector search match on consumer electronics, 2-day lead time within deadline, reliability 94/100.",
+            "match_score": 0.94,
+            "operator_approved": True,
+            "time_to_resolve_s": 167,
+            "time_to_resolve_mins": 3,
+            "cost_delta_ngn": 32000,
+            "additional_cost_ngn": 32000,
+            "created_at": datetime.now() - timedelta(days=2),
+        },
+        {
+            "disruption_type": "late",
+            "affected_skus": ["SKU-SPK-401"],
+            "original_supplier_id": chukwuemeka_id,
+            "original_supplier_name": "Chukwuemeka Electronics",
+            "chosen_supplier_name": "Lagos Electronics Hub",
+            "chosen_source": "google_maps",
+            "maps_results_used": True,
+            "agent_rationale": "DB had < 3 results — Google Maps fallback used. Lagos Electronics Hub (★4.3, open now) selected. 3-day lead time, -5% price delta.",
+            "match_score": 0.87,
+            "operator_approved": True,
+            "time_to_resolve_s": 203,
+            "time_to_resolve_mins": 3,
+            "cost_delta_ngn": -18000,
+            "additional_cost_ngn": -18000,
+            "created_at": datetime.now() - timedelta(days=5),
+        },
+    ])
+    print("✅ Sample decision logs inserted (v3 schema with source tracking)")
 
     print("\n🎉 Database seeded successfully!")
     print(f"   Database: {DB_NAME}")
