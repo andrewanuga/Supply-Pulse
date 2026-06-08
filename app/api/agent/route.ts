@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Demo mode when Gemini key isn't configured
+    // Preview mode when Groq key isn't configured
     if (
-      !process.env.GOOGLE_API_KEY ||
-      process.env.GOOGLE_API_KEY === "your_google_api_key_here"
+      !process.env.GROQ_API_KEY ||
+      process.env.GROQ_API_KEY === "your_groq_api_key_here"
     ) {
       const demo = getDemoResponse(message);
       await new Promise((r) => setTimeout(r, 1200)); // simulate thinking
@@ -82,9 +82,12 @@ export async function POST(req: NextRequest) {
     const errStr = String(err);
 
     let userMessage = "Agent failed. Check your API keys in .env.local.";
-    if (errStr.includes("GOOGLE_API_KEY") || errStr.includes("API_KEY_INVALID")) {
+    if (errStr.includes("GROQ") || errStr.includes("groq") || errStr.includes("401")) {
       userMessage =
-        "Invalid Google API key. Get one at aistudio.google.com and update GOOGLE_API_KEY in .env.local";
+        "Invalid Groq API key. Get a free key at console.groq.com and add GROQ_API_KEY to .env.local";
+    } else if (errStr.includes("GOOGLE_API_KEY") || errStr.includes("API_KEY_INVALID")) {
+      userMessage =
+        "Invalid Google API key. Check GOOGLE_API_KEY in .env.local (used for supplier embeddings).";
     } else if (
       errStr.includes("MONGODB") ||
       errStr.includes("MongoServerError") ||
