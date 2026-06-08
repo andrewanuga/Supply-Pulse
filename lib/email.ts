@@ -25,62 +25,90 @@ export async function sendVendorEmail({
       to: [to],
       subject: `Urgent Supply Request — ${skus.join(", ")} — Needed by ${deadline}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb; border-radius: 8px;">
-          <div style="background: #0f172a; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h1 style="color: #10b981; margin: 0; font-size: 24px;">SupplyPulse</h1>
-            <p style="color: #94a3b8; margin: 4px 0 0;">Automated Procurement Communication</p>
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; border-radius: 12px;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%); padding: 24px 28px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: white; font-size: 18px;">⚡</span>
+              </div>
+              <div>
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">SupplyPulse</h1>
+                <p style="color: #93c5fd; margin: 2px 0 0; font-size: 13px;">AI-Powered Supply Chain Crisis Management</p>
+              </div>
+            </div>
           </div>
 
-          <div style="background: white; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <p style="color: #334155; font-size: 16px;">Dear <strong>${supplierName}</strong>,</p>
-
-            <p style="color: #475569; line-height: 1.6;">
-              We are reaching out regarding an urgent procurement need. Due to a disruption in our supply chain,
-              we require your assistance to fulfil the following order on a priority basis.
+          <!-- Body -->
+          <div style="background: white; padding: 28px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+            <p style="color: #1e293b; font-size: 16px; margin: 0 0 16px;">
+              Dear <strong style="color: #1d4ed8;">${supplierName}</strong>,
             </p>
 
-            <div style="background: #f8fafc; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-              <h3 style="color: #0f172a; margin: 0 0 12px;">Order Details</h3>
+            <p style="color: #475569; line-height: 1.7; margin: 0 0 20px;">
+              We are reaching out regarding an <strong>urgent procurement need</strong>. Due to a disruption in our
+              supply chain, we require your assistance to fulfil the following order on a priority basis.
+            </p>
+
+            <!-- Order Details Box -->
+            <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0;">
+              <h3 style="color: #1e3a8a; margin: 0 0 14px; font-size: 15px; font-weight: 700;">📦 Order Details</h3>
               <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Products Required:</td>
-                  <td style="padding: 8px 0; color: #0f172a; font-weight: bold;">${skus.join(", ")}</td>
+                <tr style="border-bottom: 1px solid #dbeafe;">
+                  <td style="padding: 10px 0; color: #64748b; font-size: 14px; width: 45%;">Products Required:</td>
+                  <td style="padding: 10px 0; color: #1e293b; font-weight: 700; font-size: 14px;">${skus.join(", ")}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dbeafe;">
+                  <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Total Quantity:</td>
+                  <td style="padding: 10px 0; color: #1e293b; font-weight: 700; font-size: 14px;">${quantity.toLocaleString()} units</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dbeafe;">
+                  <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Required By:</td>
+                  <td style="padding: 10px 0; color: #dc2626; font-weight: 700; font-size: 14px;">🗓 ${deadline}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Total Quantity:</td>
-                  <td style="padding: 8px 0; color: #0f172a; font-weight: bold;">${quantity.toLocaleString()} units</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Required By:</td>
-                  <td style="padding: 8px 0; color: #ef4444; font-weight: bold;">${deadline}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Buyer:</td>
-                  <td style="padding: 8px 0; color: #0f172a;">${buyerName}, ${companyName}</td>
+                  <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Buyer Contact:</td>
+                  <td style="padding: 10px 0; color: #1e293b; font-size: 14px;">${buyerName}, ${companyName}</td>
                 </tr>
               </table>
             </div>
 
-            <p style="color: #475569; line-height: 1.6;">
-              Please confirm your availability and pricing at your earliest convenience.
-              Time is critical for this order and we appreciate your prompt response.
+            <!-- Urgency notice -->
+            <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 14px 18px; border-radius: 8px; margin: 20px 0;">
+              <p style="color: #c2410c; margin: 0; font-size: 14px; font-weight: 600;">
+                ⏱ Time-Sensitive Request
+              </p>
+              <p style="color: #9a3412; margin: 6px 0 0; font-size: 13px; line-height: 1.5;">
+                This is a priority order. Please confirm availability, pricing, and earliest delivery date
+                at your earliest convenience.
+              </p>
+            </div>
+
+            <p style="color: #475569; line-height: 1.7; font-size: 14px; margin: 20px 0 0;">
+              This procurement request was generated by SupplyPulse AI on behalf of
+              <strong>${companyName}</strong> as part of an automated supply chain recovery workflow.
+              A member of our procurement team will follow up shortly.
             </p>
 
-            <p style="color: #475569; line-height: 1.6;">
-              This is an AI-assisted procurement request generated by SupplyPulse on behalf of ${companyName}.
-            </p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
 
-            <p style="color: #334155; margin-top: 24px;">
+            <p style="color: #334155; margin: 0; font-size: 14px;">
               Best regards,<br />
-              <strong>${buyerName}</strong><br />
-              ${companyName}<br />
-              <span style="color: #10b981;">via SupplyPulse AI</span>
+              <strong style="color: #1e293b;">${buyerName}</strong><br />
+              <span style="color: #64748b;">${companyName}</span><br />
+              <span style="color: #2563eb; font-size: 13px;">⚡ via SupplyPulse AI Agent</span>
             </p>
           </div>
 
-          <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 16px;">
-            Sent via SupplyPulse — AI-Powered Supply Chain Crisis Management
-          </p>
+          <!-- Footer -->
+          <div style="text-align: center; margin-top: 18px;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+              Sent via <strong style="color: #2563eb;">SupplyPulse</strong> — AI-Powered Supply Chain Crisis Management
+            </p>
+            <p style="color: #cbd5e1; font-size: 11px; margin: 4px 0 0;">
+              MongoDB Atlas · Gemini 2.0 Flash · Resend
+            </p>
+          </div>
         </div>
       `,
     });

@@ -44,6 +44,12 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Disruptions fetch error:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    // Return empty data instead of 500 so the dashboard still renders
+    return NextResponse.json({
+      recentLogs: [],
+      atRiskOrders: [],
+      stats: { resolvedCount: 0, avgResolveTimeMins: 0, activeDisruptions: 0 },
+      error: String(err),
+    });
   }
 }

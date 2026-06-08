@@ -1,54 +1,216 @@
-# SupplyPulse
+# ⚡ SupplyPulse
 
-**AI Agent for SME Supply Chain Crisis Management**
+**AI Agent for Nigerian SME Supply Chain Crisis Management**
 
 > *"Because your suppliers' problems shouldn't become your customers' problems."*
 
-SupplyPulse resolves Nigerian SME supply chain disruptions in under 3 minutes — MongoDB Atlas Vector Search + Gemini 2.0 Flash + autonomous multi-tool execution.
+SupplyPulse resolves supply chain disruptions in under **3 minutes** — MongoDB Atlas Vector Search + Gemini 2.0 Flash + autonomous multi-tool execution with human-in-the-loop approval.
 
 **Hackathon:** Building Agents for Real-World Challenges · **Track:** MongoDB
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 ```bash
-cp .env.example .env.local   # Fill in MONGODB_URI, GOOGLE_API_KEY, RESEND_API_KEY
+# 1. Install
 npm install
+
+# 2. Configure environment
+cp .env.local .env.local.bak   # it already exists with placeholders
+# Edit .env.local with your real keys (see below)
+
+# 3. Run
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) → Dashboard → Seed Demo Data → Start Agent
+Open **http://localhost:3000** → click **Dashboard** → **Seed Data** → **Start Agent**
 
-## Setup (original)
+---
 
-First, run the development server:
+## 🔑 Environment Variables
+
+Edit `.env.local`:
+
+```env
+# MongoDB Atlas — cloud.mongodb.com → Connect → Drivers
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DB_NAME=supplypulse
+
+# Google AI Studio — aistudio.google.com → Get API Key
+GOOGLE_API_KEY=AIza...
+
+# Resend — resend.com → API Keys (free: 3,000 emails/month)
+RESEND_API_KEY=re_...
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+---
+
+## 🗄️ MongoDB Atlas Setup
+
+### 1. Create Cluster
+Free M0 tier at [cloud.mongodb.com](https://cloud.mongodb.com) — takes 2 minutes.
+
+### 2. Allowlist Your IP
+Atlas → Security → Network Access → Add IP Address → Allow from anywhere (0.0.0.0/0) for demo.
+
+### 3. Seed Data (2 options)
+
+**Option A — Dashboard UI (quick):**
+Go to Dashboard → click **"Seed Data"** button in the topbar.
+This inserts 15 suppliers with random embeddings + 7 orders.
+
+**Option B — Python script (recommended for real vector search):**
+```bash
+pip install pymongo google-generativeai python-dotenv
+python scripts/seed.py
+```
+This generates real 768-dim `text-embedding-004` embeddings — required for Atlas $vectorSearch to work properly.
+
+### 4. Create Vector Search Index
+1. Atlas UI → your cluster → **Search** tab → **Create Search Index**
+2. Select **Atlas Vector Search** (not Full-Text Search)
+3. Choose database: `supplypulse`, collection: `suppliers`
+4. Use this JSON definition:
+
+```json
+{
+  "fields": [
+    {
+      "type": "vector",
+      "path": "profile_embedding",
+      "numDimensions": 768,
+      "similarity": "cosine"
+    }
+  ]
+}
+```
+
+5. Name it: `supplier_vector_index`
+
+> **Without this index**, the agent falls back to reliability-score sorting — demo still works, just no semantic matching.
+
+---
+
+## 🤖 How the Agent Works
+
+```
+User: "Supplier Chukwuemeka Electronics has gone silent. 
+       3 open orders, 800 TV remotes needed by Friday."
+
+[SENSE]    → Classifies: supplier_unavailability
+[DIAGNOSE] → get_affected_orders() → 3 orders, ₦1,800,000 at risk
+[MATCH]    → find_alternative_suppliers() → $vectorSearch on 768-dim embeddings
+             ↳ Techmart Supplies — 94% match
+             ↳ Lagos Electronics Hub — 87% match
+             ↳ Gadget Wholesale Ltd — 71% match
+[PLAN]     → Ranked recovery plan: Option A / B / C with trade-off rationale
+[EXECUTE]  → Operator types "Approve Option A"
+             ↳ update_order_supplier() — 3 MongoDB records updated
+             ↳ send_vendor_email() — email sent via Resend API
+             ↳ log_decision() — decision written to audit trail
+[VERIFY]   → Resolution summary: 2m 47s, +₦54,000, audit trail stored
+```
+
+**5 real Gemini function calls. Real MongoDB reads + writes. Real email sent.**
+
+---
+
+## 📁 Project Structure
+
+```
+supply-pulse/
+├── app/
+│   ├── page.tsx              # Landing page (3D scroll-interactive)
+│   ├── dashboard/page.tsx    # Operator dashboard
+│   ├── api/
+│   │   ├── agent/route.ts    # POST /api/agent — Gemini function calling
+│   │   ├── disruptions/      # GET /api/disruptions — stats + logs
+│   │   ├── orders/           # GET /api/orders — enriched orders
+│   │   └── seed/             # POST /api/seed — seed demo data
+│   ├── not-found.tsx         # 404 page
+│   ├── error.tsx             # Error boundary
+│   └── loading.tsx           # Loading state
+├── lib/
+│   ├── agent.ts              # Core Gemini agent + 5 tool implementations
+│   ├── mongodb.ts            # MongoDB Atlas connection (global singleton)
+│   ├── email.ts              # Resend vendor email
+│   ├── types.ts              # TypeScript interfaces
+│   └── utils.ts              # Helpers: formatNaira, getStatusColor, etc.
+├── components/
+│   ├── providers.tsx         # next-themes ThemeProvider
+│   └── ui/
+│       ├── button.tsx        # Blue design system button
+│       ├── badge.tsx         # Status badge
+│       └── theme-toggle.tsx  # Dark/light mode toggle
+├── scripts/
+│   └── seed.py               # Python seed with real embeddings
+└── vercel.json               # Vercel deployment config
+```
+
+---
+
+## 🚢 Deploy to Vercel
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm i -g vercel
+vercel --prod
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Add environment variables in Vercel dashboard → Settings → Environment Variables.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Or connect your GitHub repo at [vercel.com/new](https://vercel.com/new) for automatic deploys on push.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🏆 Features Built (PRD Compliance)
 
-To learn more about Next.js, take a look at the following resources:
+| Feature | ID | Status |
+|---------|-----|--------|
+| Natural Language Disruption Intake | F-01 | ✅ |
+| Disruption Classification | F-02 | ✅ |
+| MongoDB Vector Search Matching | F-03 ★ | ✅ |
+| Ranked Recovery Plan Generation | F-04 | ✅ |
+| Human-in-the-Loop Approval | F-05 | ✅ |
+| MongoDB Order Updates | F-06 | ✅ |
+| Automated Vendor Email (Resend) | F-07 | ✅ |
+| Full Decision Audit Trail | F-08 | ✅ |
+| Resolution Summary Card | F-09 | ✅ |
+| Operator Dashboard with KPIs | F-10 | ✅ |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tech Stack
 
-## Deploy on Vercel
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS v4 |
+| AI Agent | Gemini 2.0 Flash (function calling via `@google/generative-ai`) |
+| Database | MongoDB Atlas (documents + `$vectorSearch`) |
+| Embeddings | Google `text-embedding-004` (768 dimensions) |
+| Email | Resend API |
+| Theme | `next-themes` (dark `#121212` + blue / light `#fff` + blue) |
+| Deployment | Vercel |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Not used (removed from original PRD):** Google Cloud Agent Builder, Clerk/Supabase Auth
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🎯 3-Minute Demo Script
+
+| Time | Step | What to say/do |
+|------|------|---------------|
+| 0:00 | Hook | "A supplier just ghosted a ₦2.4M order. Watch SupplyPulse resolve it in under 3 minutes." |
+| 0:20 | Intake | Type: "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday." |
+| 0:50 | Diagnose + Match | Show: 3 orders, ₦1.8M at risk. Vector search returns Techmart (94%), Lagos Hub (87%), Gadget (71%). |
+| 1:20 | Plan | Option A: Techmart — 94%, 2-day, +3% price. Full rationale shown. |
+| 1:50 | Execute | Click Approve. MongoDB records update live. Email sent. Decision log written. |
+| 2:20 | Verify | Resolution: 2m 47s, ₦54k cost delta, audit trail stored. |
+| 2:40 | Close | "Because your suppliers' problems shouldn't become your customers' problems." |
+
+---
+
+*Built for the MongoDB Hackathon · June 2026 · SupplyPulse Team*

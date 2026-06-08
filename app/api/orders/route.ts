@@ -42,6 +42,7 @@ export async function GET() {
 
     return NextResponse.json({ orders: enriched, totalValue, byStatus });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    // Return empty data so dashboard still renders
+    return NextResponse.json({ orders: [], totalValue: 0, byStatus: {}, error: String(err) });
   }
 }
