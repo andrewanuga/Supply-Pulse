@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Zap, ArrowRight, Activity, Brain, Database, Mail, Shield,
   Clock, CheckCircle2, AlertTriangle, ChevronRight, Star,
-  TrendingUp, Users, Package, BarChart3, Cpu, Globe,
+  TrendingUp, Users, Package, BarChart3, Cpu, Globe, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -95,13 +95,13 @@ function TiltCard({ children, className = "" }: { children: React.ReactNode; cla
 const termLines = [
   { t: "[SENSE] Supplier unavailability detected", c: "#818CF8", d: 0 },
   { t: "[DIAGNOSE] Querying MongoDB… 3 orders, ₦1,800,000 at risk", c: "#FBBF24", d: 700 },
-  { t: "[MATCH] $vectorSearch on 30 supplier embeddings…", c: "#60A5FA", d: 1400 },
-  { t: "  ↳ Techmart Supplies — 94% semantic match", c: "#34D399", d: 2000 },
-  { t: "  ↳ Lagos Electronics Hub — 87% match", c: "#34D399", d: 2300 },
-  { t: "[PLAN] Recovery plan generated with 3 ranked options", c: "#FB923C", d: 2800 },
-  { t: "[EXECUTE] Operator approved. Updating 3 records in MongoDB…", c: "#F87171", d: 3500 },
-  { t: "[EXECUTE] Vendor email sent via Resend API ✓", c: "#34D399", d: 4000 },
-  { t: "[VERIFY] ✅ Resolved in 2m 47s | Delta: +₦54,000", c: "#34D399", d: 4600 },
+  { t: "[MATCH-DB] $vectorSearch on 30 supplier embeddings…", c: "#60A5FA", d: 1400 },
+  { t: "  ↳ Techmart Supplies [YOUR DB] — 94% match", c: "#34D399", d: 2000 },
+  { t: "[MATCH-MAPS] < 3 DB results — Google Maps fallback…", c: "#FBBF24", d: 2500 },
+  { t: "  ↳ Lagos Electronics Hub [MAPS LIVE — Open Now ★4.3]", c: "#34D399", d: 3000 },
+  { t: "[PLAN] Recovery plan generated with 3 ranked options", c: "#FB923C", d: 3500 },
+  { t: "[EXECUTE] Operator approved. Updating 3 records in MongoDB…", c: "#F87171", d: 4200 },
+  { t: "[VERIFY] ✅ Resolved in 2m 47s | Delta: +₦54,000", c: "#34D399", d: 5000 },
 ];
 
 function HeroTerminal() {
@@ -110,7 +110,7 @@ function HeroTerminal() {
   useEffect(() => {
     setLines(0);
     const timers = termLines.map((l, i) => setTimeout(() => setLines(i + 1), l.d));
-    const reset = setTimeout(() => setLoop((n) => n + 1), 7500);
+    const reset = setTimeout(() => setLoop((n) => n + 1), 8500);
     return () => { timers.forEach(clearTimeout); clearTimeout(reset); };
   }, [loop]);
   return (
@@ -353,10 +353,11 @@ export default function LandingPage() {
               {[
                 { n: "01", label: "SENSE", desc: "Plain-English disruption intake. Agent classifies type: stockout, late delivery, price spike, or supplier unavailability.", color: "#818CF8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.25)" },
                 { n: "02", label: "DIAGNOSE", desc: "Agent calls MongoDB find() — surfaces all affected orders, SKUs, quantities, and ₦ value at risk in real time.", color: "#FBBF24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
-                { n: "03", label: "MATCH", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings. Returns top-3 semantically similar alternatives with scores.", color: "#60A5FA", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
-                { n: "04", label: "PLAN", desc: "Gemini 2.0 Flash reasons over matched suppliers. Generates ranked recovery plan with lead time, price delta, and reliability.", color: "#FB923C", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.25)" },
-                { n: "05", label: "EXECUTE", desc: "Human-in-the-loop approval gate. On confirm: updateMany() on MongoDB, vendor email via Resend, insertOne() decision log.", color: "#F87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
-                { n: "06", label: "VERIFY", desc: "Resolution card surfaces: time-to-resolve, cost delta, supplier chosen, full audit trail stored in MongoDB forever.", color: "#34D399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.25)" },
+                { n: "03", label: "MATCH-DB", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings. Returns semantically similar alternatives with match scores labelled [YOUR DB].", color: "#60A5FA", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
+                { n: "04", label: "MATCH-MAPS", desc: "If DB has fewer than 3 results, Google Maps Places API fires automatically — returning real open businesses nearby, labelled [MAPS LIVE]. Solves the cold-start problem on day one.", color: "#FBBF24", bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.25)" },
+                { n: "05", label: "PLAN", desc: "Gemini 2.0 Flash reasons over DB + Maps results. Generates ranked recovery plan (A/B/C) with lead time, price delta, reliability, and source provenance.", color: "#FB923C", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.25)" },
+                { n: "06", label: "EXECUTE", desc: "Human-in-the-loop approval gate. On confirm: updateMany() on MongoDB, vendor email via Resend, decision log inserted with source tracking.", color: "#F87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+                { n: "07", label: "VERIFY", desc: "Resolution card surfaces: time-to-resolve, cost delta, supplier chosen, source (YOUR DB vs MAPS LIVE), and full audit trail in MongoDB.", color: "#34D399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.25)" },
               ].map((s, i) => (
                 <div key={s.n} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
                   <div className="relative flex flex-col items-center">
@@ -364,7 +365,7 @@ export default function LandingPage() {
                       style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
                       {s.n}
                     </div>
-                    {i < 5 && (
+                    {i < 6 && (
                       <div className="w-px flex-1 mt-2"
                         style={{ background: `linear-gradient(180deg, ${s.color}30, transparent)`, minHeight: "24px" }} />
                     )}
@@ -457,8 +458,9 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               { name: "MongoDB Atlas", role: "Vector Search + Document DB", detail: "$vectorSearch on supplier embeddings is the core intelligence. Also handles orders, audit logs, decision records.", icon: Database, color: "#00ED64", accent: "rgba(0,237,100,0.12)", border: "rgba(0,237,100,0.2)" },
-              { name: "Gemini 2.0 Flash", role: "LLM + Function Calling", detail: "5 real tool calls per disruption: query, vector search, 2x writes, email send. Full multi-step chain.", icon: Brain, color: "#4285F4", accent: "rgba(66,133,244,0.12)", border: "rgba(66,133,244,0.2)" },
+              { name: "Gemini 2.0 Flash", role: "LLM + Function Calling", detail: "7 real tool calls per disruption: query orders, vector search, Maps fallback, save supplier, 2x writes, email send. Full multi-step chain.", icon: Brain, color: "#4285F4", accent: "rgba(66,133,244,0.12)", border: "rgba(66,133,244,0.2)" },
               { name: "Next.js 16 / TypeScript", role: "Frontend + API Routes", detail: "App router. Server-side API routes call MongoDB and Gemini directly. Type-safe end to end.", icon: Globe, color: "#E2E8F0", accent: "rgba(226,232,240,0.08)", border: "rgba(226,232,240,0.15)" },
+              { name: "Google Maps Places", role: "Live Supplier Discovery", detail: "Text Search API fires when DB has < 3 results. Returns real open businesses with ratings. Solves cold-start. Every result labelled [MAPS LIVE].", icon: MapPin, color: "#34A853", accent: "rgba(52,168,83,0.12)", border: "rgba(52,168,83,0.2)" },
               { name: "Resend API", role: "Automated Vendor Emails", detail: "Professional email on approval. Logged to MongoDB audit trail. Free tier: 3,000/month.", icon: Mail, color: "#FF6B6B", accent: "rgba(255,107,107,0.12)", border: "rgba(255,107,107,0.2)" },
               { name: "Vercel", role: "Deployment", detail: "Zero-config Next.js deployment. Environment variables via Vercel dashboard. Git push = live.", icon: Zap, color: "#E2E8F0", accent: "rgba(226,232,240,0.08)", border: "rgba(226,232,240,0.12)" },
               { name: "Tailwind CSS v4", role: "Styling System", detail: "CSS-first, zero runtime. Dark/light mode via CSS variables. 3D effects via CSS transforms.", icon: BarChart3, color: "#38BDF8", accent: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)" },
