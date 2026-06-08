@@ -6,7 +6,7 @@ import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
   Home, BarChart3, MessageSquare, Send, Zap, Package,
   TrendingUp, Users, RefreshCw, ChevronRight, Loader2,
-  ShieldCheck, Key, Settings2, BookOpen, ExternalLink,
+  ShieldCheck, Key, Settings2, BookOpen, ExternalLink, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -17,6 +17,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   phase?: string;
+  mapsUsed?: boolean;
   timestamp: Date;
 }
 
@@ -42,8 +43,13 @@ interface DecisionLog {
   disruption_type: string;
   original_supplier_name: string;
   chosen_supplier_name: string;
+  chosen_source?: string;
+  maps_results_used?: boolean;
   time_to_resolve_mins: number;
+  time_to_resolve_s?: number;
   additional_cost_ngn: number;
+  cost_delta_ngn?: number;
+  match_score?: number;
   created_at: string;
 }
 
@@ -158,25 +164,58 @@ function OrderRow({ order }: { order: Order }) {
   );
 }
 
+// ─── Source badge ─────────────────────────────────────────────────────────────
+function SourceBadge({ source }: { source?: string }) {
+  if (!source) return null;
+  if (source === "google_maps") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+        style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24", border: "1px solid rgba(251,191,36,0.25)" }}>
+        🗺 MAPS
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+      style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)", border: "1px solid rgba(37,99,235,0.2)" }}>
+      🗄 DB
+    </span>
+  );
+}
+
 // ─── Log row ──────────────────────────────────────────────────────────────────
 function LogRow({ log }: { log: DecisionLog }) {
   const typeColor: Record<string, string> = {
     stockout: "#F87171", late: "#FBBF24", price_spike: "#FB923C", unavailable: "#818CF8",
   };
+  const costDelta = log.cost_delta_ngn ?? log.additional_cost_ngn ?? 0;
+  const resolveTime = log.time_to_resolve_s
+    ? `${Math.floor(log.time_to_resolve_s / 60)}m ${log.time_to_resolve_s % 60}s`
+    : log.time_to_resolve_mins
+    ? `${log.time_to_resolve_mins}min`
+    : null;
+
   return (
-    <div className="flex items-center gap-3 py-3 border-b last:border-0" style={{ borderColor: "var(--border-2)" }}>
-      <div className="flex-shrink-0 w-2 h-2 rounded-full mt-1" style={{ background: "#34D399" }} />
+    <div className="flex items-start gap-3 py-3 border-b last:border-0" style={{ borderColor: "var(--border-2)" }}>
+      <div className="flex-shrink-0 w-2 h-2 rounded-full mt-1.5" style={{ background: "#34D399" }} />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold uppercase" style={{ color: typeColor[log.disruption_type] || "var(--text-muted)" }}>
             {log.disruption_type}
           </span>
-          <ChevronRight className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
-          <span className="text-xs truncate" style={{ color: "var(--text)" }}>{log.chosen_supplier_name}</span>
+          <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+          <span className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>{log.chosen_supplier_name}</span>
+          <SourceBadge source={log.chosen_source} />
+          {log.maps_results_used && log.chosen_source !== "google_maps" && (
+            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>maps checked</span>
+          )}
         </div>
-        <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-          from: {log.original_supplier_name} · {log.time_to_resolve_mins}min
-          {log.additional_cost_ngn > 0 && ` · +${formatNaira(log.additional_cost_ngn)}`}
+        <div className="text-xs mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: "var(--text-muted)" }}>
+          <span>from: {log.original_supplier_name}</span>
+          {resolveTime && <span>· {resolveTime}</span>}
+          {log.match_score && <span>· {Math.round(log.match_score * 100)}% match</span>}
+          {costDelta > 0 && <span className="text-yellow-400">· +{formatNaira(costDelta)}</span>}
+          {costDelta < 0 && <span className="text-green-400">· {formatNaira(costDelta)}</span>}
         </div>
       </div>
       <div className="flex-shrink-0 text-xs" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
@@ -207,14 +246,14 @@ function SetupGuide({ onSeed, seeded }: { onSeed: () => void; seeded: boolean })
   const steps = [
     {
       n: 1, icon: Key, title: "Configure API Keys",
-      desc: "Add MONGODB_URI, GOOGLE_API_KEY, and RESEND_API_KEY to your .env.local file.",
+      desc: "Add MONGODB_URI, GOOGLE_API_KEY, GOOGLE_MAPS_API_KEY, and RESEND_API_KEY to .env.local. Get Maps key at console.cloud.google.com → enable Places API.",
       action: null,
-      done: true, // assume done if they got here
-      link: { label: "View .env.local template", href: "https://github.com" },
+      done: true,
+      link: { label: "Google Maps Console", href: "https://console.cloud.google.com/apis/library/places-backend.googleapis.com" },
     },
     {
       n: 2, icon: Database, title: "Seed Demo Data",
-      desc: "Load 15 suppliers with real embeddings + 7 orders into MongoDB Atlas.",
+      desc: "Load 15 suppliers + 7 orders into MongoDB Atlas. For real vector search use scripts/seed.py (generates real 768-dim embeddings).",
       done: seedDone,
       action: () => handleSeed(),
       actionLabel: seedLoading ? "Seeding…" : "Seed Now",
@@ -222,9 +261,15 @@ function SetupGuide({ onSeed, seeded }: { onSeed: () => void; seeded: boolean })
     },
     {
       n: 3, icon: Settings2, title: "Create Atlas Vector Index",
-      desc: 'In MongoDB Atlas UI → your cluster → Search → Create Index. Use "suppliers" collection, field "embedding", 768 dims, cosine similarity.',
+      desc: 'Atlas UI → your cluster → Search → Create Index. Collection: suppliers, field: profile_embedding, 768 dims, cosine. Name: supplier_vector_index.',
       done: false,
       link: { label: "Atlas Search Docs", href: "https://www.mongodb.com/docs/atlas/atlas-search/" },
+    },
+    {
+      n: 4, icon: MapPin, title: "Test Google Maps Fallback",
+      desc: "In the AI Agent: type a disruption. After DB results, the agent calls Maps Places API for live businesses near you. Watch the [MAPS LIVE] badges appear.",
+      done: false,
+      link: null,
     },
   ];
 
@@ -234,7 +279,7 @@ function SetupGuide({ onSeed, seeded }: { onSeed: () => void; seeded: boolean })
         <BookOpen className="w-4 h-4" style={{ color: "var(--accent)" }} />
         <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>Setup Guide</span>
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)", border: "1px solid rgba(37,99,235,0.2)" }}>
-          3 steps to go live
+          4 steps to go live
         </span>
       </div>
       <div className="space-y-3">
@@ -351,7 +396,7 @@ function ChatPanel() {
       if (data.error) {
         setMessages((prev) => [...prev, { role: "assistant", content: `⚠️ ${data.error}\n\nMake sure your API keys are set in .env.local`, timestamp: new Date() }]);
       } else {
-        setMessages((prev) => [...prev, { role: "assistant", content: data.message, phase: data.phase, timestamp: new Date() }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: data.message, phase: data.phase, mapsUsed: data.mapsUsed ?? false, timestamp: new Date() }]);
         setCurrentPhase(data.phase);
         setHistory([...newHistory, { role: "model", parts: [{ text: data.message }] }]);
       }
@@ -414,7 +459,15 @@ function ChatPanel() {
                 : <Zap className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />}
             </div>
             <div className={`flex flex-col gap-1 max-w-[82%] ${msg.role === "user" ? "items-end" : ""}`}>
-              {msg.role === "assistant" && msg.phase && <PhaseBadge phase={msg.phase} />}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {msg.role === "assistant" && msg.phase && <PhaseBadge phase={msg.phase} />}
+                {msg.role === "assistant" && msg.mapsUsed && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border"
+                    style={{ background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", color: "#FBBF24" }}>
+                    <MapPin className="w-2.5 h-2.5" /> Maps used
+                  </span>
+                )}
+              </div>
               <div className="px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
                 style={msg.role === "user"
                   ? { background: "rgba(37,99,235,0.15)", color: "var(--text)", border: "1px solid rgba(37,99,235,0.2)", borderTopRightRadius: 4 }
@@ -563,27 +616,58 @@ function DashboardOverview({
       </div>
 
       {/* Performance stats */}
-      {logs.length > 0 && (
-        <div className="glass-card rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-            <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>Resolution Performance</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Avg. Resolve Time", value: `${stats.avgResolveTimeMins}min`, color: "#60A5FA" },
-              { label: "Disruptions Resolved", value: stats.resolvedCount, color: "#34D399" },
-              { label: "Orders Total", value: orders.length, color: "var(--text)" },
-              { label: "AI Decisions Made", value: logs.length, color: "#818CF8" },
-            ].map((m) => (
-              <div key={m.label} className="text-center p-4 rounded-xl" style={{ background: "var(--bg-2)" }}>
-                <div className="text-2xl font-bold" style={{ color: m.color }}>{m.value}</div>
-                <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{m.label}</div>
+      {logs.length > 0 && (() => {
+        const mapsCount = logs.filter((l) => l.chosen_source === "google_maps" || l.maps_results_used).length;
+        const dbCount = logs.length - mapsCount;
+        const mapsPct = Math.round((mapsCount / logs.length) * 100);
+        const dbPct = 100 - mapsPct;
+        return (
+          <div className="glass-card rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>Resolution Performance</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              {[
+                { label: "Avg. Resolve Time", value: `${stats.avgResolveTimeMins}min`, color: "#60A5FA" },
+                { label: "Disruptions Resolved", value: stats.resolvedCount, color: "#34D399" },
+                { label: "Orders Total", value: orders.length, color: "var(--text)" },
+                { label: "AI Decisions Made", value: logs.length, color: "#818CF8" },
+              ].map((m) => (
+                <div key={m.label} className="text-center p-4 rounded-xl" style={{ background: "var(--bg-2)" }}>
+                  <div className="text-2xl font-bold" style={{ color: m.color }}>{m.value}</div>
+                  <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{m.label}</div>
+                </div>
+              ))}
+            </div>
+            {/* F-12: Maps vs DB source breakdown */}
+            <div className="rounded-xl p-4" style={{ background: "var(--bg-2)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Supplier Source Breakdown (F-12)</span>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="flex items-center gap-1" style={{ color: "#60A5FA" }}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#60A5FA" }} />
+                    🗄 Your DB — {dbCount} ({dbPct}%)
+                  </span>
+                  <span className="flex items-center gap-1" style={{ color: "#FBBF24" }}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#FBBF24" }} />
+                    🗺 Maps Live — {mapsCount} ({mapsPct}%)
+                  </span>
+                </div>
               </div>
-            ))}
+              <div className="flex rounded-full overflow-hidden h-2.5" style={{ background: "var(--border)" }}>
+                <div className="h-full transition-all duration-500" style={{ width: `${dbPct}%`, background: "linear-gradient(90deg,#2563EB,#60A5FA)" }} />
+                <div className="h-full transition-all duration-500" style={{ width: `${mapsPct}%`, background: "linear-gradient(90deg,#F59E0B,#FBBF24)" }} />
+              </div>
+              <p className="text-xs mt-2" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
+                {mapsPct > 0
+                  ? `${mapsPct}% of resolutions used Google Maps fallback — helping you discover new suppliers.`
+                  : "All resolutions used your own supplier DB — great network coverage!"}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
