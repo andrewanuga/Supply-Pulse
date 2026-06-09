@@ -119,7 +119,7 @@ export async function sendVendorEmail({
               Sent via <strong style="color: #2563eb;">SupplyPulse</strong> — AI-Powered Supply Chain Crisis Management
             </p>
             <p style="color: #cbd5e1; font-size: 11px; margin: 4px 0 0;">
-              MongoDB Atlas · Groq · Gmail
+              MongoDB Atlas · Gemini · Gmail
             </p>
           </div>
         </div>

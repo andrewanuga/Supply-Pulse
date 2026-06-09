@@ -42,7 +42,7 @@ const DEMO_RESPONSES: Array<{ match: RegExp; phase: string; message: string; map
     match: /.*/,
     phase: "verify",
     message:
-      "✅ **[VERIFY]** Resolution complete.\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | Your database |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Gmail |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n_This is a preview with sample data. To connect your live data, add `MONGODB_URI`, `GROQ_API_KEY`, and `GMAIL_USER` + `GMAIL_APP_PASSWORD` to your `.env.local` — then seed from the Setup Guide._",
+      "✅ **[VERIFY]** Resolution complete.\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | Your database |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Gmail |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n_This is a preview with sample data. To connect your live data, add `MONGODB_URI`, `GOOGLE_API_KEY`, and `GMAIL_USER` + `GMAIL_APP_PASSWORD` to your `.env.local` — then seed from the Setup Guide._",
   },
 ];
 
@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Preview mode when Groq key isn't configured
+    // Preview mode when the Gemini key isn't configured
     if (
-      !process.env.GROQ_API_KEY ||
-      process.env.GROQ_API_KEY === "your_groq_api_key_here"
+      !process.env.GOOGLE_API_KEY ||
+      process.env.GOOGLE_API_KEY === "your_google_api_key_here"
     ) {
       const demo = getDemoResponse(message);
       await new Promise((r) => setTimeout(r, 1200)); // simulate thinking
@@ -82,12 +82,13 @@ export async function POST(req: NextRequest) {
     const errStr = String(err);
 
     let userMessage = "Agent failed. Check your API keys in .env.local.";
-    if (errStr.includes("GROQ") || errStr.includes("groq") || errStr.includes("401")) {
+    if (
+      errStr.includes("GOOGLE_API_KEY") ||
+      errStr.includes("API_KEY_INVALID") ||
+      errStr.includes("401")
+    ) {
       userMessage =
-        "Invalid Groq API key. Get a free key at console.groq.com and add GROQ_API_KEY to .env.local";
-    } else if (errStr.includes("GOOGLE_API_KEY") || errStr.includes("API_KEY_INVALID")) {
-      userMessage =
-        "Invalid Google API key. Check GOOGLE_API_KEY in .env.local (used for supplier embeddings).";
+        "Invalid Google API key. Get a free key at aistudio.google.com and add GOOGLE_API_KEY to .env.local (powers the Gemini agent + supplier embeddings).";
     } else if (
       errStr.includes("MONGODB") ||
       errStr.includes("MongoServerError") ||

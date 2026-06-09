@@ -1,17 +1,16 @@
-import Groq from "groq-sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type Content } from "@google/generative-ai";
 import { getCollection } from "./mongodb";
 import { sendVendorEmail } from "./email";
 import { searchMapsSuppliers } from "./maps";
 import { ObjectId } from "mongodb";
 import type { AgentResponse } from "./types";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
-
-// Google embeddings still used for $vectorSearch (separate quota, free)
+// Single Google client — powers both the Gemini agent and $vectorSearch embeddings
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
-// ─── Tool definitions (OpenAI/Groq format) ────────────────────────────────────
+const GEMINI_MODEL = "gemini-2.0-flash";
+
+// ─── Tool definitions (authored in JSON-Schema style, converted to Gemini below) ─
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tools: any[] = [
@@ -171,6 +170,48 @@ const tools: any[] = [
         required: ["name", "maps_place_id"],
       },
     },
+  },
+];
+
+// ─── Convert JSON-Schema tool params → Gemini FunctionDeclaration schema ───────
+
+const SCHEMA_TYPES: Record<string, SchemaType> = {
+  object: SchemaType.OBJECT,
+  string: SchemaType.STRING,
+  array: SchemaType.ARRAY,
+  number: SchemaType.NUMBER,
+  integer: SchemaType.INTEGER,
+  boolean: SchemaType.BOOLEAN,
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toGeminiSchema(schema: any): any {
+  if (!schema || typeof schema !== "object") return schema;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const out: any = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "type" && typeof value === "string") {
+      out.type = SCHEMA_TYPES[value] ?? value;
+    } else if (key === "properties" && value && typeof value === "object") {
+      out.properties = Object.fromEntries(
+        Object.entries(value).map(([k, v]) => [k, toGeminiSchema(v)])
+      );
+    } else if (key === "items") {
+      out.items = toGeminiSchema(value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+const geminiTools = [
+  {
+    functionDeclarations: tools.map((t) => ({
+      name: t.function.name,
+      description: t.function.description,
+      parameters: toGeminiSchema(t.function.parameters),
+    })),
   },
 ];
 
@@ -518,38 +559,32 @@ export async function runAgentTurn(
   userMessage: string,
   history: Array<{ role: string; parts: Array<{ text: string }> }>
 ): Promise<AgentResponse> {
-  // Convert history from Gemini format to Groq/OpenAI format
-  const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...history.map((h) => ({
-      role: (h.role === "model" ? "assistant" : h.role) as "user" | "assistant",
-      content: h.parts.map((p) => p.text).join(""),
-    })),
-    { role: "user", content: userMessage },
-  ];
+  const model = genAI.getGenerativeModel({
+    model: GEMINI_MODEL,
+    systemInstruction: SYSTEM_PROMPT,
+    tools: geminiTools,
+    generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
+  });
+
+  // history is already in Gemini format ({ role: "user" | "model", parts: [{ text }] }).
+  // Normalize any "assistant" role just in case the client sends OpenAI-style turns.
+  const chat = model.startChat({
+    history: history.map((h) => ({
+      role: h.role === "assistant" ? "model" : h.role,
+      parts: h.parts,
+    })) as Content[],
+  });
 
   let mapsWasUsed = false;
+  let result = await chat.sendMessage(userMessage);
 
-  // Agentic loop — keep going until no more tool calls
+  // Agentic loop — keep going until Gemini stops requesting tool calls
   for (let i = 0; i < 8; i++) {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages,
-      tools,
-      tool_choice: "auto",
-      temperature: 0.3,
-      max_tokens: 2048,
-    });
-
-    const choice = response.choices[0];
-    const msg = choice.message;
-
-    // Push assistant message (with any tool_calls) into history
-    messages.push(msg as Groq.Chat.Completions.ChatCompletionMessageParam);
+    const calls = result.response.functionCalls() ?? [];
 
     // No tool calls — we have the final text response
-    if (!msg.tool_calls || msg.tool_calls.length === 0) {
-      const text = msg.content || "";
+    if (calls.length === 0) {
+      const text = result.response.text();
       return {
         message: text,
         phase: detectPhase(text),
@@ -557,25 +592,25 @@ export async function runAgentTurn(
       };
     }
 
-    // Execute all tool calls and push results
-    for (const tc of msg.tool_calls) {
-      if (tc.type !== "function") continue;
-      if (tc.function.name === "maps_search_suppliers") mapsWasUsed = true;
+    // Execute all requested tool calls and collect their results
+    const responseParts = [];
+    for (const call of calls) {
+      if (call.name === "maps_search_suppliers") mapsWasUsed = true;
 
-      let result: unknown;
+      let data: unknown;
       try {
-        const args = JSON.parse(tc.function.arguments || "{}");
-        result = await dispatchTool(tc.function.name, args);
+        data = await dispatchTool(call.name, (call.args ?? {}) as Record<string, unknown>);
       } catch (err) {
-        result = { error: String(err) };
+        data = { error: String(err) };
       }
 
-      messages.push({
-        role: "tool",
-        tool_call_id: tc.id,
-        content: JSON.stringify(result),
+      responseParts.push({
+        functionResponse: { name: call.name, response: data as object },
       });
     }
+
+    // Feed tool results back to the model for the next step
+    result = await chat.sendMessage(responseParts);
   }
 
   return {

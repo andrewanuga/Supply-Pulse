@@ -362,20 +362,50 @@ function Sidebar({ active, setActive }: { active: string; setActive: (v: string)
 
 // ─── Chat panel ───────────────────────────────────────────────────────────────
 function ChatPanel() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hello! I'm SupplyPulse — your AI supply chain crisis agent.\n\nI can:\n• Detect and diagnose disruptions in real time\n• Run MongoDB $vectorSearch to find the best alternative suppliers\n• Generate ranked recovery plans (Option A/B/C)\n• Execute with your approval — updating records + sending vendor emails\n• Store every decision in your audit trail\n\nTry the quick starts below, or describe a disruption in your own words.",
-      phase: "sense",
-      timestamp: new Date(),
-    },
-  ]);
+  const WELCOME: ChatMessage = {
+    role: "assistant",
+    content: "Hello! I'm SupplyPulse — your AI supply chain crisis agent.\n\nI can:\n• Detect and diagnose disruptions in real time\n• Run MongoDB $vectorSearch to find the best alternative suppliers\n• Generate ranked recovery plans (Option A/B/C)\n• Execute with your approval — updating records + sending vendor emails\n• Store every decision in your audit trail\n\nTry the quick starts below, or describe a disruption in your own words.",
+    phase: "sense",
+    timestamp: new Date(),
+  };
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string | undefined>("sense");
   const [history, setHistory] = useState<Array<{ role: string; parts: Array<{ text: string }> }>>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load chat history from MongoDB on mount
+  useEffect(() => {
+    if (historyLoaded) return;
+    fetch("/api/chat-history")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.messages && data.messages.length > 0) {
+          // Restore timestamps as Date objects
+          const restored: ChatMessage[] = data.messages.map((m: ChatMessage & { timestamp: string }) => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+          }));
+          setMessages([WELCOME, ...restored]);
+          // Rebuild agent history from restored messages (skip welcome)
+          const agentHistory = restored.map((m: ChatMessage) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          }));
+          setHistory(agentHistory);
+          if (restored.length > 0) {
+            const lastPhase = restored.filter((m) => m.phase).pop()?.phase;
+            if (lastPhase) setCurrentPhase(lastPhase);
+          }
+        }
+        setHistoryLoaded(true);
+      })
+      .catch(() => setHistoryLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -383,7 +413,8 @@ function ChatPanel() {
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMsg, timestamp: new Date() }]);
+    const userEntry: ChatMessage = { role: "user", content: userMsg, timestamp: new Date() };
+    setMessages((prev) => [...prev, userEntry]);
     setLoading(true);
     const newHistory = [...history, { role: "user", parts: [{ text: userMsg }] }];
     try {
@@ -394,9 +425,34 @@ function ChatPanel() {
       });
       const data = await res.json();
       if (data.error) {
-        setMessages((prev) => [...prev, { role: "assistant", content: `⚠️ ${data.error}\n\nMake sure your API keys are set in .env.local`, timestamp: new Date() }]);
+        const errEntry: ChatMessage = { role: "assistant", content: `⚠️ ${data.error}\n\nMake sure your API keys are set in .env.local`, timestamp: new Date() };
+        setMessages((prev) => [...prev, errEntry]);
+        // Persist even error messages so user sees them on reload
+        setMessages((cur) => {
+          const nonWelcome = cur.slice(1);
+          fetch("/api/chat-history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: nonWelcome }),
+          }).catch(() => {});
+          return cur;
+        });
       } else {
-        setMessages((prev) => [...prev, { role: "assistant", content: data.message, phase: data.phase, mapsUsed: data.mapsUsed ?? false, timestamp: new Date() }]);
+        const assistantEntry: ChatMessage = {
+          role: "assistant", content: data.message, phase: data.phase,
+          mapsUsed: data.mapsUsed ?? false, timestamp: new Date(),
+        };
+        setMessages((prev) => {
+          const updated = [...prev, assistantEntry];
+          // Save to MongoDB (skip the welcome message at index 0)
+          const toSave = updated.slice(1);
+          fetch("/api/chat-history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: toSave }),
+          }).catch(() => {});
+          return updated;
+        });
         setCurrentPhase(data.phase);
         setHistory([...newHistory, { role: "model", parts: [{ text: data.message }] }]);
       }
@@ -427,11 +483,11 @@ function ChatPanel() {
             <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>SupplyPulse Agent</div>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-xs" style={{ color: "var(--accent)" }}>online · Gemini 2.0 Flash</span>
+              <span className="text-xs" style={{ color: "var(--accent)" }}>online · Google Gemini 2.0 Flash</span>
             </div>
           </div>
         </div>
-        <div className="text-xs" style={{ color: "var(--text-muted)" }}>MongoDB $vectorSearch · Resend</div>
+        <div className="text-xs" style={{ color: "var(--text-muted)" }}>MongoDB $vectorSearch · Gmail</div>
       </div>
 
       {/* Phase progress bar */}
@@ -699,6 +755,28 @@ function TopbarSeedButton({ onSeeded }: { onSeeded: () => void }) {
   );
 }
 
+// ─── User menu ────────────────────────────────────────────────────────────────
+// Auth is temporarily disabled — this is a static placeholder account chip.
+// When auth is re-added, restore the session-driven menu with a Sign out action.
+function UserMenu() {
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+      style={{ border: "1px solid var(--border)" }}
+    >
+      <div
+        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+        style={{ background: "rgba(37,99,235,0.2)", color: "var(--accent)" }}
+      >
+        SP
+      </div>
+      <span className="hidden sm:block text-xs font-medium" style={{ color: "var(--text)" }}>
+        Demo
+      </span>
+    </div>
+  );
+}
+
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [active, setActive] = useState("dashboard");
@@ -811,11 +889,12 @@ export default function DashboardPage() {
               <h1 className="text-sm font-semibold capitalize" style={{ color: "var(--text)" }}>
                 {tabLabel[active] || active}
               </h1>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>MongoDB Atlas · Gemini 2.0 Flash · Resend</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>MongoDB Atlas · Gemini · Google Maps</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <UserMenu />
             <TopbarSeedButton onSeeded={() => { setSeeded(true); fetchData(); }} />
             <Button size="sm" variant="ghost" onClick={fetchData} className="gap-1.5 text-xs">
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
