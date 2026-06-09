@@ -30,7 +30,7 @@ const DEMO_RESPONSES: Array<{ match: RegExp; phase: string; message: string; map
     phase: "execute",
     mapsUsed: false,
     message:
-      "**[EXECUTE]** Approved — rerouting to Techmart Supplies.\n\n✅ `updateMany()` — 3 order records updated → status: `rerouted`, supplier: Techmart Supplies\n✅ Vendor email sent via Resend API → techmart@example.com\n✅ Decision recorded in audit log:\n  - Chosen source: your supplier database\n  - Match score: 94%\n  - Time to resolve: 2m 47s",
+      "**[EXECUTE]** Approved — rerouting to Techmart Supplies.\n\n✅ `updateMany()` — 3 order records updated → status: `rerouted`, supplier: Techmart Supplies\n✅ Vendor email sent via Gmail → techmart@example.com\n✅ Decision recorded in audit log:\n  - Chosen source: your supplier database\n  - Match score: 94%\n  - Time to resolve: 2m 47s",
   },
   {
     match: /save|add.*database|add.*supplier/i,
@@ -42,7 +42,7 @@ const DEMO_RESPONSES: Array<{ match: RegExp; phase: string; message: string; map
     match: /.*/,
     phase: "verify",
     message:
-      "✅ **[VERIFY]** Resolution complete.\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | Your database |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Resend |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n_This is a preview with sample data. To connect your live data, add `MONGODB_URI`, `GOOGLE_API_KEY`, `GOOGLE_MAPS_API_KEY`, and `RESEND_API_KEY` to your `.env.local` — then seed from the Setup Guide._",
+      "✅ **[VERIFY]** Resolution complete.\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | Your database |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Gmail |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n_This is a preview with sample data. To connect your live data, add `MONGODB_URI`, `GROQ_API_KEY`, and `GMAIL_USER` + `GMAIL_APP_PASSWORD` to your `.env.local` — then seed from the Setup Guide._",
   },
 ];
 

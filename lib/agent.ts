@@ -137,7 +137,7 @@ const tools: any[] = [
     function: {
       name: "send_vendor_email",
       description:
-        "Send a professional procurement email to the chosen supplier via Gmail. Call after operator approval and after update_order_supplier.",
+        "Send a professional procurement email to the chosen supplier via Gmail (Nodemailer). Call after operator approval and after update_order_supplier.",
       parameters: {
         type: "object",
         properties: {
