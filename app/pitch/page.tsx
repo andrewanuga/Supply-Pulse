@@ -356,17 +356,17 @@ export default function PitchPage() {
                   <Zap className="w-4 h-4" /> Open Dashboard <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/register">
+              {/* <Link href="/register">
                 <Button size="lg" variant="outline"
                   className="gap-2 border-white/20 text-white hover:bg-white/10">
                   <Activity className="w-4 h-4" /> Create account
                 </Button>
-              </Link>
+              </Link> */}
             </div>
 
             <p className="text-blue-400 font-mono text-lg font-bold mb-3">supply-pulse-ecru.vercel.app</p>
             <p className="text-xs text-slate-600">
-              MongoDB Atlas · Gemini · Groq · Google Maps · Gmail
+              MongoDB Atlas · Gemini · Google Maps · Gmail
             </p>
           </div>
         </section>

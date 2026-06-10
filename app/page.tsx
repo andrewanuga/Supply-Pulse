@@ -149,11 +149,11 @@ export default function LandingPage() {
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Link href="/register">
+                {/* <Link href="/register">
                   <Button size="lg" variant="outline" className="gap-2">
                     Create account
                   </Button>
-                </Link>
+                </Link> */}
               </div>
 
               {/* Quick stats */}
@@ -242,7 +242,7 @@ export default function LandingPage() {
             <span className="text-sm" style={{ color: "var(--text-muted)" }}>· AI Supply Chain Crisis Management</span>
           </div>
           <span className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
-            MongoDB Atlas · Gemini · Groq · Google Maps · Gmail
+            MongoDB Atlas · Gemini · Google Maps · Gmail
           </span>
         </div>
       </footer>
