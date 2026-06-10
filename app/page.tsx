@@ -126,7 +126,7 @@ function HeroTerminal() {
           <span className="text-xs text-blue-400 font-mono">live</span>
         </div>
       </div>
-      <div className="p-4 space-y-1.5 min-h-[200px]">
+      <div className="p-4 space-y-1.5 min-h-50">
         {termLines.slice(0, lines).map((l, i) => (
           <div key={`${loop}-${i}`} className="text-xs leading-relaxed font-mono animate-slide-up" style={{ color: l.c }}>
             <span className="text-[rgba(148,163,184,0.3)] mr-2 select-none">›</span>{l.t}
@@ -185,7 +185,7 @@ export default function LandingPage() {
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--bg)" }}>
 
       {/* ── Navbar ──────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--border)]">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-(--border)">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl btn-glow flex items-center justify-center">
@@ -196,7 +196,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--text-muted)" }}>
             {["Features", "How It Works", "Stack"].map((label) => (
               <a key={label} href={`#${label.toLowerCase().replace(/\s/g, "-")}`}
-                className="hover:text-[var(--accent)] transition-colors">{label}</a>
+                className="hover:text-(--accent) transition-colors">{label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
@@ -278,7 +278,7 @@ export default function LandingPage() {
         {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-float-slow"
           style={{ color: "var(--text-muted)" }}>
-          <div className="w-px h-10 bg-gradient-to-b from-transparent to-[var(--accent)]" />
+          <div className="w-px h-10 bg-linear-to-b from-transparent to-(--accent)" />
           <span className="text-xs uppercase tracking-widest">Scroll</span>
         </div>
       </section>
@@ -308,7 +308,7 @@ export default function LandingPage() {
               { icon: Shield, title: "Zero audit trail", desc: "Owners can't review what happened, why a supplier was chosen, or who approved what.", side: "reveal-right", delay: 300 },
             ].map((p) => (
               <div key={p.title} className={`${p.side} glass-card rounded-2xl p-6 flex gap-4`} style={{ transitionDelay: `${p.delay}ms` }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
                   <p.icon className="w-5 h-5 text-red-400" />
                 </div>
@@ -361,7 +361,7 @@ export default function LandingPage() {
               ].map((s, i) => (
                 <div key={s.n} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
                   <div className="relative flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                       style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
                       {s.n}
                     </div>
@@ -464,7 +464,7 @@ export default function LandingPage() {
               { name: "Tailwind CSS v4", role: "Styling System", detail: "CSS-first, zero runtime. Dark/light mode via CSS variables. 3D effects via CSS transforms.", icon: BarChart3, color: "#38BDF8", accent: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)" },
             ].map((t, i) => (
               <div key={t.name} className="reveal glass-card rounded-2xl p-5 flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: t.accent, border: `1px solid ${t.border}` }}>
                   <t.icon className="w-5 h-5" style={{ color: t.color }} />
                 </div>
@@ -499,11 +499,11 @@ export default function LandingPage() {
               { step: "06", label: "Track the outcome", text: "The dashboard shows time-to-resolve, cost delta, and supplier source for every incident. Your operations data grows smarter with each resolution.", color: "#34D399" },
             ].map((s, i) => (
               <div key={s.step} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
-                <div className="text-right w-12 flex-shrink-0 pt-1">
+                <div className="text-right w-12 shrink-0 pt-1">
                   <span className="text-xs font-mono font-bold" style={{ color: s.color }}>{s.step}</span>
                 </div>
                 <div className="glass-card rounded-xl p-4 flex-1 flex gap-3">
-                  <div className="w-1.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                  <div className="w-1.5 rounded-full shrink-0" style={{ background: s.color }} />
                   <div>
                     <div className="text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: s.color }}>{s.label}</div>
                     <p className="text-sm" style={{ color: "var(--text-muted)" }}>{s.text}</p>
