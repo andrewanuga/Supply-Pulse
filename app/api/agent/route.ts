@@ -9,40 +9,40 @@ const DEMO_RESPONSES: Array<{ match: RegExp; phase: string; message: string; map
     match: /silent|unavailable|ghost|gone|missing|supplier|chukwuemeka/i,
     phase: "diagnose",
     message:
-      "**[SENSE]** Classified: `supplier_unavailability`\n\n**[DIAGNOSE]** I found **3 affected orders** linked to Chukwuemeka Electronics:\n\n• `SKU-REM-800` — 300 TV Remote Controls — ₦750,000\n• `SKU-REM-801` — 250 Set-Top Box Remotes — ₦800,000\n• `SKU-REM-802` — 250 Smart TV Remotes — ₦1,125,000\n\n**⚠️ Total at risk: ₦2,675,000 · Urgency: CRITICAL — deadline in 2 days**\n\nRunning MongoDB `$vectorSearch` on supplier embeddings...",
+      "[SENSE] Classified: supplier_unavailability\n\n[DIAGNOSE] Found 3 affected orders linked to Chukwuemeka Electronics:\n\n• SKU-REM-800 — 300 TV Remote Controls — ₦750,000\n• SKU-REM-801 — 250 Set-Top Box Remotes — ₦800,000\n• SKU-REM-802 — 250 Smart TV Remotes — ₦1,125,000\n\n⚠ Total at risk: ₦2,675,000 · Urgency: CRITICAL — deadline in 2 days\n\nRunning MongoDB $vectorSearch on supplier embeddings...",
   },
   {
     match: /at.?risk|orders|diagnose/i,
     phase: "match",
     mapsUsed: true,
     message:
-      "**[MATCH — DB]** MongoDB Atlas `$vectorSearch` (768-dim, cosine similarity):\n• **Techmart Supplies** `[YOUR DB]` — 94% match — Reliability: 94/100\n\nOnly 1 result from your database — expanding search with Google Maps...\n\n**[MATCH — MAPS]** Google Maps Places API → `\"electronics wholesaler Lagos Island\"`:\n• **Lagos Electronics Hub** `[MAPS LIVE — Open Now]` — ★ 4.3/5 · 287 reviews — Ikeja, 3.2km\n• **Alaba Int'l Market** `[MAPS LIVE — Open Now]` — ★ 4.1/5 · 512 reviews — Ojo, 7.1km\n\n_Merging results into ranked recovery plan..._",
+      "[MATCH — DB] MongoDB Atlas $vectorSearch (768-dim, cosine similarity):\n• Techmart Supplies [YOUR DB] — 94% match — Reliability: 94/100\n\nOnly 1 result in your database — expanding with Google Maps...\n\n[MATCH — MAPS] Google Maps Places API → \"electronics wholesaler Lagos Island\":\n• Lagos Electronics Hub [MAPS LIVE — Open Now] — ★ 4.3/5 · 287 reviews — Ikeja, 3.2km\n• Alaba Int'l Market [MAPS LIVE — Open Now] — ★ 4.1/5 · 512 reviews — Ojo, 7.1km\n\nMerging results into ranked recovery plan...",
   },
   {
     match: /alternative|supplier|find|search/i,
     phase: "plan",
     mapsUsed: true,
     message:
-      "**[PLAN]** Ranked recovery options for 800 TV remotes, Friday deadline:\n\n---\n**Option A | Techmart Supplies** `[YOUR DB]`\nMatch: **94%** · 2-day delivery · Mid price · Lagos Island\nReliability: 94/100 · 9 previous orders, no failures\n✅ **Recommended.** Strongest match. Previous relationship. Friday deadline is safe.\n\n---\n**Option B | Lagos Electronics Hub** `[MAPS LIVE — Open Now ★4.3]`\nMatch: **87%** · 3-day delivery · 5% cheaper · Ikeja, 3.2km\n⚠️ _Tight on time. Friday delivery is possible but leaves no buffer._\n\n---\n**Option C | Alaba Int'l Market** `[MAPS LIVE — Open Now ★4.1]`\nMatch: **71%** · 4-day delivery · 8% cheaper · Ojo, 7.1km\n❌ _Not recommended. Delivery timeline has no margin for error._\n\n---\nShall I reroute all 3 orders to **Techmart Supplies** and send them a vendor email? Type **'Approve Option A'** to confirm.",
+      "[PLAN] Ranked recovery options — 800 TV remotes, Friday deadline:\n\n──────────────────────────────\nOPTION A — Techmart Supplies [YOUR DB]\n  Match score   : 94%\n  Lead time     : 2 days\n  Price tier    : Mid\n  Reliability   : 94/100\n  Rationale     : Strongest match. Previous relationship. Friday deadline is safe.\n  → RECOMMENDED\n──────────────────────────────\nOPTION B — Lagos Electronics Hub [MAPS LIVE — Open Now ★4.3]\n  Match score   : 87%\n  Lead time     : 3 days\n  Price tier    : Budget (5% cheaper)\n  Rating        : ★ 4.3/5 · 287 reviews — Ikeja, 3.2km\n  Rationale     : Tight on Friday — possible but leaves no buffer.\n──────────────────────────────\nOPTION C — Alaba Int'l Market [MAPS LIVE — Open Now ★4.1]\n  Match score   : 71%\n  Lead time     : 4 days\n  Price tier    : Budget (8% cheaper)\n  Rating        : ★ 4.1/5 · 512 reviews — Ojo, 7.1km\n  Rationale     : Not recommended — no margin for error on delivery.\n──────────────────────────────\n\nShall I reroute all 3 orders to Techmart Supplies and send them a vendor email? Type 'Approve Option A' to confirm.",
   },
   {
     match: /approve|execute|confirm|yes|go ahead/i,
     phase: "execute",
     mapsUsed: false,
     message:
-      "**[EXECUTE]** Approved — rerouting to Techmart Supplies.\n\n✅ `updateMany()` — 3 order records updated → status: `rerouted`, supplier: Techmart Supplies\n✅ Vendor email sent via Gmail → techmart@example.com\n✅ Decision recorded in audit log:\n  - Chosen source: your supplier database\n  - Match score: 94%\n  - Time to resolve: 2m 47s",
+      "[EXECUTE] Approved — rerouting to Techmart Supplies.\n\n✓ updateMany() — 3 order records updated\n    status: rerouted · supplier: Techmart Supplies\n✓ Vendor email sent via Gmail → techmart@example.com\n✓ Decision recorded in audit log\n    Source      : YOUR DB\n    Match score : 94%\n    Resolved in : 2m 47s",
   },
   {
     match: /save|add.*database|add.*supplier/i,
     phase: "verify",
     message:
-      "✅ **Lagos Electronics Hub** has been saved to your supplier database.\n\n- Source: Google Maps (imported)\n- Rating: ★4.3\n- Address stored\n- Available for future supplier matching\n\nThey will now appear in `$vectorSearch` results for relevant disruptions.",
+      "✓ Lagos Electronics Hub saved to your supplier database.\n\n  Source   : Google Maps (imported)\n  Rating   : ★ 4.3/5\n  Address  : Stored\n\nThey will now appear in $vectorSearch results for future disruptions.",
   },
   {
     match: /.*/,
     phase: "verify",
     message:
-      "✅ **[VERIFY]** Resolution complete.\n\n| Metric | Value |\n|--------|-------|\n| ⏱ Time to resolve | 2m 47s |\n| 🏪 Supplier chosen | Techmart Supplies |\n| 📍 Source | Your database |\n| 🎯 Match score | 94% |\n| 📦 Orders updated | 3 records |\n| 📧 Email sent | ✓ via Gmail |\n| 💰 Cost delta | +₦54,000 |\n| 🗂️ Audit log | Stored ✓ |\n| 🗺️ Maps used | Yes (2 results) |\n\n_This is a preview with sample data. To connect your live data, add `MONGODB_URI`, `GOOGLE_API_KEY`, and `GMAIL_USER` + `GMAIL_APP_PASSWORD` to your `.env.local` — then seed from the Setup Guide._",
+      "RESOLUTION COMPLETE ✓\n─────────────────────────────────\n  Time to resolve  : 2m 47s\n  Supplier chosen  : Techmart Supplies\n  Source           : YOUR DB\n  Match score      : 94%\n  Orders updated   : 3 records\n  Email sent       : ✓ via Gmail\n  Cost delta       : +₦54,000\n  Audit log        : Stored ✓\n  Maps used        : Yes (2 results)\n─────────────────────────────────\n\nThis is a preview with sample data. To go live, add MONGODB_URI, GOOGLE_API_KEY, and GMAIL_USER + GMAIL_APP_PASSWORD to your .env.local — then seed from the Setup Guide.",
   },
 ];
 
@@ -61,14 +61,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Preview mode when no LLM key is configured (Gemini is the default agent;
-    // Grok is an automatic fallback — either key enables live mode)
+    // Preview mode when no LLM key is configured.
+    // Live mode requires at least one of: GOOGLE_API_KEY (Gemini, default) or
+    // GROQ_API_KEY (Groq Llama 3.3 70B, automatic fallback).
     const hasGemini =
       process.env.GOOGLE_API_KEY &&
       process.env.GOOGLE_API_KEY !== "your_google_api_key_here";
-    const hasGrok =
-      process.env.XAI_API_KEY && process.env.XAI_API_KEY !== "your_xai_api_key_here";
-    if (!hasGemini && !hasGrok) {
+    const hasGroq =
+      process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== "your_groq_api_key_here";
+    if (!hasGemini && !hasGroq) {
       const demo = getDemoResponse(message);
       await new Promise((r) => setTimeout(r, 1200)); // simulate thinking
       return NextResponse.json({
@@ -85,9 +86,9 @@ export async function POST(req: NextRequest) {
     const errStr = String(err);
 
     let userMessage = "Agent failed. Check your API keys in .env.local.";
-    if (errStr.includes("Grok API error") || errStr.includes("XAI_API_KEY") || errStr.includes("api.x.ai")) {
+    if (errStr.includes("GROQ_API_KEY") || errStr.includes("groq") || errStr.includes("api.groq.com")) {
       userMessage =
-        "Both the Gemini agent and the Grok fallback failed. Check GOOGLE_API_KEY and XAI_API_KEY (and GROK_MODEL) in .env.local.";
+        "Both Gemini and the Groq fallback failed. Check GOOGLE_API_KEY and GROQ_API_KEY in .env.local.";
     } else if (
       errStr.includes("GOOGLE_API_KEY") ||
       errStr.includes("API_KEY_INVALID") ||
