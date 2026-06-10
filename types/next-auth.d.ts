@@ -11,7 +11,7 @@ declare module "next-auth" {
       company?: string;
     };
   }
-  interface User {
+  interface User { 
     id: string;
     company?: string;
   }
