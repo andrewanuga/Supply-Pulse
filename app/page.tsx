@@ -355,8 +355,8 @@ export default function LandingPage() {
                 { n: "02", label: "DIAGNOSE", desc: "Agent calls MongoDB find() — surfaces all affected orders, SKUs, quantities, and ₦ value at risk in real time.", color: "#FBBF24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
                 { n: "03", label: "MATCH-DB", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings. Returns semantically similar alternatives with match scores labelled [YOUR DB].", color: "#60A5FA", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
                 { n: "04", label: "MATCH-MAPS", desc: "If DB has fewer than 3 results, Google Maps Places API fires automatically — returning real open businesses nearby, labelled [MAPS LIVE]. Solves the cold-start problem on day one.", color: "#FBBF24", bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.25)" },
-                { n: "05", label: "PLAN", desc: "Gemini 2.0 Flash reasons over DB + Maps results. Generates ranked recovery plan (A/B/C) with lead time, price delta, reliability, and source provenance.", color: "#FB923C", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.25)" },
-                { n: "06", label: "EXECUTE", desc: "Human-in-the-loop approval gate. On confirm: updateMany() on MongoDB, vendor email via Resend, decision log inserted with source tracking.", color: "#F87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+                { n: "05", label: "PLAN", desc: "AI agent reasons over DB + Maps results. Generates ranked recovery plan (A/B/C) with lead time, price delta, reliability, and source provenance.", color: "#FB923C", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.25)" },
+                { n: "06", label: "EXECUTE", desc: "Human-in-the-loop approval gate. On confirm: updateMany() on MongoDB, vendor email via Gmail, decision log inserted with source tracking.", color: "#F87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
                 { n: "07", label: "VERIFY", desc: "Resolution card surfaces: time-to-resolve, cost delta, supplier chosen, source (YOUR DB vs MAPS LIVE), and full audit trail in MongoDB.", color: "#34D399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.25)" },
               ].map((s, i) => (
                 <div key={s.n} className="reveal flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
@@ -390,7 +390,7 @@ export default function LandingPage() {
                   { l: "Supplier chosen", v: "Techmart Supplies", c: "" },
                   { l: "Match score", v: "94%", c: "text-green-400" },
                   { l: "Orders updated", v: "3 records in MongoDB", c: "" },
-                  { l: "Email sent", v: "✓ via Resend", c: "text-green-400" },
+                  { l: "Email sent", v: "✓ via Gmail", c: "text-green-400" },
                   { l: "Additional cost", v: "+₦54,000", c: "text-yellow-400" },
                   { l: "Audit log", v: "Stored ✓", c: "text-green-400" },
                 ].map((r) => (
@@ -421,9 +421,9 @@ export default function LandingPage() {
             {[
               { icon: Brain, title: "Natural Language Intake", desc: "Describe any disruption in plain English. The agent classifies, reasons, and acts — no forms, no dropdowns." },
               { icon: Database, title: "Semantic Supplier Matching", desc: "MongoDB Atlas $vectorSearch on 768-dim supplier embeddings finds the most relevant alternatives, even with imperfect descriptions." },
-              { icon: TrendingUp, title: "Ranked Recovery Plans", desc: "Gemini 2.0 Flash reasons over every candidate and presents Option A/B/C with clear trade-off rationale." },
+              { icon: TrendingUp, title: "Ranked Recovery Plans", desc: "AI agent reasons over every candidate and presents Option A/B/C with clear trade-off rationale — source-labelled for full transparency." },
               { icon: Shield, title: "Human-in-the-Loop", desc: "No orders are updated, no emails are sent, until you approve. You stay in control at every step." },
-              { icon: Mail, title: "Automated Vendor Emails", desc: "Professional vendor outreach drafted and sent via Resend the moment you approve — and logged to the audit trail." },
+              { icon: Mail, title: "Automated Vendor Emails", desc: "Professional vendor outreach drafted and sent via Gmail the moment you approve — and logged to the audit trail." },
               { icon: Clock, title: "Full Audit Trail", desc: "Every agent decision is written to MongoDB with timestamp, rationale, chosen supplier, cost delta, and source." },
             ].map((f) => (
               <TiltCard key={f.title} className="p-6">
@@ -456,10 +456,10 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               { name: "MongoDB Atlas", role: "Vector Search + Document DB", detail: "$vectorSearch on supplier embeddings is the core intelligence. Also handles orders, audit logs, decision records.", icon: Database, color: "#00ED64", accent: "rgba(0,237,100,0.12)", border: "rgba(0,237,100,0.2)" },
-              { name: "Gemini 2.0 Flash", role: "LLM + Function Calling", detail: "7 real tool calls per disruption: query orders, vector search, Maps fallback, save supplier, 2x writes, email send. Full multi-step chain.", icon: Brain, color: "#4285F4", accent: "rgba(66,133,244,0.12)", border: "rgba(66,133,244,0.2)" },
+              { name: "Gemini + Groq Llama 3.3", role: "LLM + Function Calling", detail: "7 real tool calls per disruption: query orders, vector search, Maps fallback, save supplier, 2x writes, email send. Gemini primary, Groq auto-fallback.", icon: Brain, color: "#4285F4", accent: "rgba(66,133,244,0.12)", border: "rgba(66,133,244,0.2)" },
               { name: "Next.js 16 / TypeScript", role: "Frontend + API Routes", detail: "App router. Server-side API routes call MongoDB and Gemini directly. Type-safe end to end.", icon: Globe, color: "#E2E8F0", accent: "rgba(226,232,240,0.08)", border: "rgba(226,232,240,0.15)" },
               { name: "Google Maps Places", role: "Live Supplier Discovery", detail: "Text Search API fires when DB has < 3 results. Returns real open businesses with ratings. Solves cold-start. Every result labelled [MAPS LIVE].", icon: MapPin, color: "#34A853", accent: "rgba(52,168,83,0.12)", border: "rgba(52,168,83,0.2)" },
-              { name: "Resend API", role: "Automated Vendor Emails", detail: "Professional email on approval. Logged to MongoDB audit trail. Free tier: 3,000/month.", icon: Mail, color: "#FF6B6B", accent: "rgba(255,107,107,0.12)", border: "rgba(255,107,107,0.2)" },
+              { name: "Gmail via Nodemailer", role: "Automated Vendor Emails", detail: "Professional procurement email sent on operator approval. Uses Gmail App Password — no third-party email service needed. Logged to MongoDB audit trail.", icon: Mail, color: "#FF6B6B", accent: "rgba(255,107,107,0.12)", border: "rgba(255,107,107,0.2)" },
               { name: "Vercel", role: "Deployment", detail: "Zero-config Next.js deployment. Environment variables via Vercel dashboard. Git push = live.", icon: Zap, color: "#E2E8F0", accent: "rgba(226,232,240,0.08)", border: "rgba(226,232,240,0.12)" },
               { name: "Tailwind CSS v4", role: "Styling System", detail: "CSS-first, zero runtime. Dark/light mode via CSS variables. 3D effects via CSS transforms.", icon: BarChart3, color: "#38BDF8", accent: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)" },
             ].map((t, i) => (
@@ -554,7 +554,7 @@ export default function LandingPage() {
             <span className="text-sm" style={{ color: "var(--text-muted)" }}>· AI Supply Chain Crisis Management</span>
           </div>
           <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Built with MongoDB Atlas · Gemini 2.0 Flash · Google Maps · Resend
+            Built with MongoDB Atlas · Gemini · Groq · Google Maps · Gmail
           </div>
         </div>
       </footer>

@@ -590,8 +590,8 @@ export async function dispatchTool(name: string, args: Record<string, unknown>):
 
 // ─── Agent execution ──────────────────────────────────────────────────────────
 
-// Default provider: Gemini. If the Gemini call fails and XAI_API_KEY is configured,
-// runAgentTurn() automatically falls back to Grok (see the orchestrator below).
+// Default provider: Gemini. If Gemini fails, runAgentTurn() automatically
+// falls back to Groq Llama 3.3 70B (see the orchestrator below).
 export async function runGeminiTurn(
   userMessage: string,
   history: Array<{ role: string; parts: Array<{ text: string }> }>

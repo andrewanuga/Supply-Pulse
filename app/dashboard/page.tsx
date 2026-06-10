@@ -246,7 +246,7 @@ function SetupGuide({ onSeed, seeded }: { onSeed: () => void; seeded: boolean })
   const steps = [
     {
       n: 1, icon: Key, title: "Configure API Keys",
-      desc: "Add MONGODB_URI, GOOGLE_API_KEY, GOOGLE_MAPS_API_KEY, and RESEND_API_KEY to .env.local. Get Maps key at console.cloud.google.com → enable Places API.",
+      desc: "Add MONGODB_URI, GOOGLE_API_KEY, GROQ_API_KEY, GOOGLE_MAPS_API_KEY, GMAIL_USER, and GMAIL_APP_PASSWORD to .env.local. Get Maps key at console.cloud.google.com → enable Places API.",
       action: null,
       done: true,
       link: { label: "Google Maps Console", href: "https://console.cloud.google.com/apis/library/places-backend.googleapis.com" },
@@ -483,7 +483,7 @@ function ChatPanel() {
             <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>SupplyPulse Agent</div>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-xs" style={{ color: "var(--accent)" }}>online · Google Gemini 2.0 Flash</span>
+              <span className="text-xs" style={{ color: "var(--accent)" }}>online · Gemini + Groq Llama 3.3</span>
             </div>
           </div>
         </div>
