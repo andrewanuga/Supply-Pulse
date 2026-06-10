@@ -284,7 +284,7 @@ export default function PitchPage() {
           <div className="grid md:grid-cols-2 gap-3">
             {[
               { name: "MongoDB Atlas",           role: "$vectorSearch + document store",   color: "#00ed64", icon: Database },
-              { name: "Gemini + Groq Llama 3.3", role: "LLM with automatic fallback",      color: "#60A5FA", icon: Zap },
+              { name: "Gemini + Llama 3.3", role: "LLM with automatic fallback",      color: "#60A5FA", icon: Zap },
               { name: "Google Maps Places API",  role: "Live supplier discovery",          color: "#34a853", icon: MapPin },
               { name: "Gmail via Nodemailer",    role: "Automated vendor emails",          color: "#FB923C", icon: Mail },
               { name: "Next.js 16 + TypeScript", role: "Full-stack, type-safe",            color: "#e2e8f0", icon: Activity },

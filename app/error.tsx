@@ -42,7 +42,7 @@ export default function GlobalError({
       )}
       <p className="text-sm mb-8 max-w-sm" style={{ color: "var(--text-muted)" }}>
         Make sure your <code className="text-blue-400">.env.local</code> has valid
-        MONGODB_URI, GOOGLE_API_KEY, and GROQ_API_KEY.
+        MONGODB_URI and GOOGLE_API_KEY.
       </p>
       <div className="flex gap-4">
         <button
