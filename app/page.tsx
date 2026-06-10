@@ -96,6 +96,10 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          <Link href="/pitch" className="text-sm font-medium hidden sm:block"
+            style={{ color: "var(--text-muted)" }}>
+            Pitch Deck
+          </Link>
           <Link href="/dashboard">
             <Button size="sm" className="gap-1.5 text-sm">
               <Zap className="w-3.5 h-3.5" /> Open App

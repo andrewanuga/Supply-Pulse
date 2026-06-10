@@ -600,7 +600,7 @@ function DashboardOverview({
 
   return (
     <div className="space-y-6">
-      {showSetup && <SetupGuide onSeed={onSeed} seeded={seeded} />}
+      {/* {showSetup && <SetupGuide onSeed={onSeed} seeded={seeded} />} */}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
