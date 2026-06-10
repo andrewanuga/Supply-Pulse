@@ -61,11 +61,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Preview mode when the Gemini key isn't configured
-    if (
-      !process.env.GOOGLE_API_KEY ||
-      process.env.GOOGLE_API_KEY === "your_google_api_key_here"
-    ) {
+    // Preview mode when no LLM key is configured (Gemini is the default agent;
+    // Grok is an automatic fallback — either key enables live mode)
+    const hasGemini =
+      process.env.GOOGLE_API_KEY &&
+      process.env.GOOGLE_API_KEY !== "your_google_api_key_here";
+    const hasGrok =
+      process.env.XAI_API_KEY && process.env.XAI_API_KEY !== "your_xai_api_key_here";
+    if (!hasGemini && !hasGrok) {
       const demo = getDemoResponse(message);
       await new Promise((r) => setTimeout(r, 1200)); // simulate thinking
       return NextResponse.json({
@@ -82,7 +85,10 @@ export async function POST(req: NextRequest) {
     const errStr = String(err);
 
     let userMessage = "Agent failed. Check your API keys in .env.local.";
-    if (
+    if (errStr.includes("Grok API error") || errStr.includes("XAI_API_KEY") || errStr.includes("api.x.ai")) {
+      userMessage =
+        "Both the Gemini agent and the Grok fallback failed. Check GOOGLE_API_KEY and XAI_API_KEY (and GROK_MODEL) in .env.local.";
+    } else if (
       errStr.includes("GOOGLE_API_KEY") ||
       errStr.includes("API_KEY_INVALID") ||
       errStr.includes("401")

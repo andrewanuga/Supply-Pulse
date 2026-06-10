@@ -13,7 +13,7 @@ const GEMINI_MODEL = "gemini-2.0-flash";
 // ─── Tool definitions (authored in JSON-Schema style, converted to Gemini below) ─
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tools: any[] = [
+export const tools: any[] = [
   {
     type: "function",
     function: {
@@ -217,7 +217,7 @@ const geminiTools = [
 
 // ─── System prompt ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are SupplyPulse — an expert AI agent for Nigerian SME supply chain crisis management.
+export const SYSTEM_PROMPT = `You are SupplyPulse — an expert AI agent for Nigerian SME supply chain crisis management.
 You work for procurement officers and warehouse managers. Your job: resolve supply disruptions in under 3 minutes.
 
 ## Your 7-Step Agent Loop
@@ -532,7 +532,7 @@ async function save_maps_supplier_tool(params: {
 
 // ─── Tool dispatcher ──────────────────────────────────────────────────────────
 
-async function dispatchTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+export async function dispatchTool(name: string, args: Record<string, unknown>): Promise<unknown> {
   switch (name) {
     case "get_affected_orders":
       return get_affected_orders(args.supplier_name as string);
@@ -555,7 +555,9 @@ async function dispatchTool(name: string, args: Record<string, unknown>): Promis
 
 // ─── Agent execution ──────────────────────────────────────────────────────────
 
-export async function runAgentTurn(
+// Default provider: Gemini. If the Gemini call fails and XAI_API_KEY is configured,
+// runAgentTurn() automatically falls back to Grok (see the orchestrator below).
+export async function runGeminiTurn(
   userMessage: string,
   history: Array<{ role: string; parts: Array<{ text: string }> }>
 ): Promise<AgentResponse> {
@@ -620,7 +622,30 @@ export async function runAgentTurn(
   };
 }
 
-function detectPhase(text: string): AgentResponse["phase"] {
+// ─── Provider orchestrator ────────────────────────────────────────────────────
+// Tries Gemini first (default). If it throws and a Grok (xAI) key is configured,
+// transparently falls back to the Grok agent. With no fallback key, the original
+// Gemini error is re-thrown so the route's error handler can report it.
+export async function runAgentTurn(
+  userMessage: string,
+  history: Array<{ role: string; parts: Array<{ text: string }> }>
+): Promise<AgentResponse> {
+  try {
+    return await runGeminiTurn(userMessage, history);
+  } catch (geminiErr) {
+    const hasGrok =
+      process.env.XAI_API_KEY && process.env.XAI_API_KEY !== "your_xai_api_key_here";
+    if (!hasGrok) throw geminiErr;
+
+    console.error("Gemini agent failed — falling back to Grok:", geminiErr);
+    // Dynamic import avoids a circular dependency (agent-grok imports shared
+    // tools/prompt/dispatch from this module).
+    const { runGrokTurn } = await import("./agent-grok");
+    return await runGrokTurn(userMessage, history);
+  }
+}
+
+export function detectPhase(text: string): AgentResponse["phase"] {
   const lower = text.toLowerCase();
   if (lower.includes("resolved") || lower.includes("resolution") || lower.includes("verify") ||
       lower.includes("time to resolve") || lower.includes("audit log"))
