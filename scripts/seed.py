@@ -15,9 +15,9 @@ from datetime import datetime, timedelta
 import random
 
 try:
-    from dotenv import load_dotenv
-    from pymongo import MongoClient
-    import google.generativeai as genai
+    from dotenv import load_dotenv  # type: ignore[import]
+    from pymongo import MongoClient  # type: ignore[import]
+    import google.generativeai as genai  # type: ignore[import]
 except ImportError:
     print("Install dependencies: pip install pymongo google-generativeai python-dotenv")
     exit(1)
