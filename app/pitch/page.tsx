@@ -109,13 +109,13 @@ export default function PitchPage() {
           </p>
           <div className="space-y-3">
             {[
-              { icon: "📞", text: "Hours of phone calls and WhatsApp messages to find a replacement — no guarantee of success." },
-              { icon: "🔗", text: "No single system connecting open orders, supplier contacts, and alternatives in one place." },
-              { icon: "🎲", text: "Every disruption resolved by gut instinct — no data, no process, no audit trail." },
+              { Icon: Phone, text: "Hours of phone calls and WhatsApp messages to find a replacement — no guarantee of success." },
+              { Icon: Link2, text: "No single system connecting open orders, supplier contacts, and alternatives in one place." },
+              { Icon: Shuffle, text: "Every disruption resolved by gut instinct — no data, no process, no audit trail." },
             ].map((p) => (
               <div key={p.text} className="flex gap-4 items-start p-4 rounded-2xl"
                 style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)" }}>
-                <span className="text-xl mt-0.5">{p.icon}</span>
+                <p.Icon className="w-4 h-4 mt-0.5 shrink-0 text-red-400" />
                 <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>{p.text}</p>
               </div>
             ))}
@@ -312,14 +312,17 @@ export default function PitchPage() {
 
           <div className="space-y-3">
             {[
-              { icon: "💬", title: "WhatsApp Integration",   color: "#25D366", desc: "Most Nigerian SME procurement happens on WhatsApp. A Twilio-powered interface for the agent is the most-requested feature." },
-              { icon: "🏪", title: "Supplier Onboarding",    color: "#60A5FA", desc: "Let suppliers register directly, verify their own data, and appear in YOUR DB results for future disruptions." },
-              { icon: "⚡", title: "Predictive Alerts",      color: "#FBBF24", desc: "Monitor order lead times and supplier activity — flag risks before they become emergencies." },
-              { icon: "🌍", title: "Multi-Language Support", color: "#34D399", desc: "Yoruba, Igbo, and Hausa intake for operators outside Lagos who don't default to English." },
+              { Icon: MessageCircle, title: "WhatsApp Integration",   color: "#25D366", desc: "Most Nigerian SME procurement happens on WhatsApp. A Twilio-powered interface for the agent is the most-requested feature." },
+              { Icon: Users,         title: "Supplier Onboarding",    color: "#60A5FA", desc: "Let suppliers register directly, verify their own data, and appear in YOUR DB results for future disruptions." },
+              { Icon: BellRing,      title: "Predictive Alerts",      color: "#FBBF24", desc: "Monitor order lead times and supplier activity — flag risks before they become emergencies." },
+              { Icon: Languages,     title: "Multi-Language Support", color: "#34D399", desc: "Yoruba, Igbo, and Hausa intake for operators outside Lagos who don't default to English." },
             ].map((item) => (
               <div key={item.title} className="flex gap-4 items-start p-5 rounded-2xl"
                 style={{ background: "var(--bg-2)", border: "1px solid var(--border)" }}>
-                <span className="text-2xl shrink-0 mt-0.5">{item.icon}</span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ background: `${item.color}15`, border: `1px solid ${item.color}30` }}>
+                  <item.Icon className="w-4 h-4" style={{ color: item.color }} />
+                </div>
                 <div>
                   <div className="text-sm font-bold mb-1" style={{ color: item.color }}>{item.title}</div>
                   <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
