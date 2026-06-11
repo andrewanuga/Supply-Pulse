@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
@@ -170,15 +170,15 @@ function SourceBadge({ source }: { source?: string }) {
   if (source === "google_maps") {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-        style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24", border: "1px solid rgba(251,191,36,0.25)" }}>
-        🗺 MAPS
+        style={{ background: "rgba(52,211,153,0.12)", color: "#34D399", border: "1px solid rgba(52,211,153,0.25)" }}>
+        <MapPin className="w-2.5 h-2.5" /> MAPS LIVE
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
       style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)", border: "1px solid rgba(37,99,235,0.2)" }}>
-      🗄 DB
+      <Database className="w-2.5 h-2.5" /> YOUR DB
     </span>
   );
 }
@@ -349,7 +349,12 @@ function Sidebar({ active, setActive }: { active: string; setActive: (v: string)
           </button>
         ))}
       </nav>
-      <div className="p-2 border-t" style={{ borderColor: "var(--border)" }}>
+      <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)" }}>
+        <Link href="/pitch" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:bg-[var(--bg-2)]"
+          style={{ color: "var(--text-muted)" }}>
+          <Zap className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden lg:block">Pitch Deck</span>
+        </Link>
         <Link href="/" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:bg-[var(--bg-2)]"
           style={{ color: "var(--text-muted)" }}>
           <Home className="w-4 h-4 flex-shrink-0" />
@@ -361,36 +366,56 @@ function Sidebar({ active, setActive }: { active: string; setActive: (v: string)
 }
 
 // ─── Chat panel ───────────────────────────────────────────────────────────────
+const LOADING_PHASES = ["SENSE", "DIAGNOSE", "MATCH-DB", "MATCH-MAPS", "PLAN", "EXECUTE", "VERIFY"];
+
 function ChatPanel() {
   const WELCOME: ChatMessage = {
     role: "assistant",
-    content: "Hello! I'm SupplyPulse — your AI supply chain crisis agent.\n\nI can:\n• Detect and diagnose disruptions in real time\n• Run MongoDB $vectorSearch to find the best alternative suppliers\n• Generate ranked recovery plans (Option A/B/C)\n• Execute with your approval — updating records + sending vendor emails\n• Store every decision in your audit trail\n\nTry the quick starts below, or describe a disruption in your own words.",
+    content: "Hello! I'm SupplyPulse — your AI supply chain crisis agent.\n\nDescribe a disruption in plain English and I'll walk through all 7 steps automatically:\n\nSENSE → DIAGNOSE → MATCH-DB → MATCH-MAPS → PLAN → EXECUTE → VERIFY\n\nExample: \"Supplier Chukwuemeka Electronics has gone silent. I have 3 orders, 800 TV remotes needed by Friday.\"\n\nOr click a quick start below to try it now.",
     phase: "sense",
     timestamp: new Date(),
   };
+
+  // Per-tab session ID — stored in sessionStorage so each browser tab gets its own chat history
+  const sessionId = useMemo(() => {
+    if (typeof window === "undefined") return "ssr";
+    let id = sessionStorage.getItem("sp_session_id");
+    if (!id) {
+      id = `tab_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem("sp_session_id", id);
+    }
+    return id;
+  }, []);
+
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPhaseIdx, setLoadingPhaseIdx] = useState(0);
   const [currentPhase, setCurrentPhase] = useState<string | undefined>("sense");
   const [history, setHistory] = useState<Array<{ role: string; parts: Array<{ text: string }> }>>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load chat history from MongoDB on mount
+  // Animate through phase labels while the agent is running
+  useEffect(() => {
+    if (!loading) { setLoadingPhaseIdx(0); return; }
+    const interval = setInterval(() => setLoadingPhaseIdx((i) => (i + 1) % LOADING_PHASES.length), 900);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // Load chat history from MongoDB on mount — scoped to this browser tab's session
   useEffect(() => {
     if (historyLoaded) return;
-    fetch("/api/chat-history")
+    fetch("/api/chat-history", { headers: { "x-session-id": sessionId } })
       .then((r) => r.json())
       .then((data) => {
         if (data.messages && data.messages.length > 0) {
-          // Restore timestamps as Date objects
           const restored: ChatMessage[] = data.messages.map((m: ChatMessage & { timestamp: string }) => ({
             ...m,
             timestamp: new Date(m.timestamp),
           }));
           setMessages([WELCOME, ...restored]);
-          // Rebuild agent history from restored messages (skip welcome)
           const agentHistory = restored.map((m: ChatMessage) => ({
             role: m.role === "assistant" ? "model" : "user",
             parts: [{ text: m.content }],
@@ -424,35 +449,23 @@ function ChatPanel() {
         body: JSON.stringify({ message: userMsg, history }),
       });
       const data = await res.json();
+      const saveHistory = (msgs: ChatMessage[]) => {
+        fetch("/api/chat-history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+          body: JSON.stringify({ messages: msgs.slice(1) }), // skip welcome
+        }).catch(() => {});
+      };
+
       if (data.error) {
         const errEntry: ChatMessage = { role: "assistant", content: `⚠️ ${data.error}\n\nMake sure your API keys are set in .env.local`, timestamp: new Date() };
-        setMessages((prev) => [...prev, errEntry]);
-        // Persist even error messages so user sees them on reload
-        setMessages((cur) => {
-          const nonWelcome = cur.slice(1);
-          fetch("/api/chat-history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: nonWelcome }),
-          }).catch(() => {});
-          return cur;
-        });
+        setMessages((prev) => { const next = [...prev, errEntry]; saveHistory(next); return next; });
       } else {
         const assistantEntry: ChatMessage = {
           role: "assistant", content: data.message, phase: data.phase,
           mapsUsed: data.mapsUsed ?? false, timestamp: new Date(),
         };
-        setMessages((prev) => {
-          const updated = [...prev, assistantEntry];
-          // Save to MongoDB (skip the welcome message at index 0)
-          const toSave = updated.slice(1);
-          fetch("/api/chat-history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: toSave }),
-          }).catch(() => {});
-          return updated;
-        });
+        setMessages((prev) => { const next = [...prev, assistantEntry]; saveHistory(next); return next; });
         setCurrentPhase(data.phase);
         setHistory([...newHistory, { role: "model", parts: [{ text: data.message }] }]);
       }
@@ -542,9 +555,14 @@ function ChatPanel() {
               style={{ background: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.25)" }}>
               <Zap className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
             </div>
-            <div className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-2 glass-card">
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--accent)" }} />
-              <span className="text-sm" style={{ color: "var(--text-muted)" }}>Agent reasoning…</span>
+            <div className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-3 glass-card">
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "var(--accent)" }} />
+              <div>
+                <span className="text-xs font-mono font-bold" style={{ color: "var(--accent)" }}>
+                  [{LOADING_PHASES[loadingPhaseIdx]}]
+                </span>
+                <span className="text-xs ml-2" style={{ color: "var(--text-muted)" }}>Running agent loop…</span>
+              </div>
             </div>
           </div>
         )}
@@ -600,7 +618,7 @@ function DashboardOverview({
 
   return (
     <div className="space-y-6">
-      {/* {showSetup && <SetupGuide onSeed={onSeed} seeded={seeded} />} */}
+      {showSetup && <SetupGuide onSeed={onSeed} seeded={seeded} />}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -702,12 +720,12 @@ function DashboardOverview({
                 <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Supplier Source Breakdown (F-12)</span>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="flex items-center gap-1" style={{ color: "#60A5FA" }}>
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#60A5FA" }} />
-                    🗄 Your DB — {dbCount} ({dbPct}%)
+                    <Database className="w-3 h-3" />
+                    YOUR DB — {dbCount} ({dbPct}%)
                   </span>
-                  <span className="flex items-center gap-1" style={{ color: "#FBBF24" }}>
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#FBBF24" }} />
-                    🗺 Maps Live — {mapsCount} ({mapsPct}%)
+                  <span className="flex items-center gap-1" style={{ color: "#34D399" }}>
+                    <MapPin className="w-3 h-3" />
+                    MAPS LIVE — {mapsCount} ({mapsPct}%)
                   </span>
                 </div>
               </div>
