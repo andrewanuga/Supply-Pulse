@@ -383,8 +383,17 @@ async function find_alternative_suppliers(queryText: string, excludeSupplierName
       (s) => !excludeSupplierName || !s.name.toLowerCase().includes(excludeSupplierName.toLowerCase())
     );
 
+    const top3 = filtered.slice(0, 3);
+    if (top3.length === 0) {
+      return {
+        suppliers: [],
+        count: 0,
+        search_method: "vector_search",
+        note: "Supplier database is empty. You MUST call maps_search_suppliers now to find live alternatives via Google Maps.",
+      };
+    }
     return {
-      suppliers: filtered.slice(0, 3).map((s, i) => ({
+      suppliers: top3.map((s, i) => ({
         id: s._id.toString(),
         name: s.name,
         category: s.category,
@@ -397,7 +406,7 @@ async function find_alternative_suppliers(queryText: string, excludeSupplierName
         source: s.source || "user_db",
         match_score: Math.round((s.match_score || 0.9 - i * 0.07) * 100),
       })),
-      count: Math.min(filtered.length, 3),
+      count: top3.length,
       search_method: "vector_search",
     };
   } catch {
@@ -411,6 +420,15 @@ async function find_alternative_suppliers(queryText: string, excludeSupplierName
       .sort({ reliability_score: -1 })
       .limit(3)
       .toArray();
+
+    if (results.length === 0) {
+      return {
+        suppliers: [],
+        count: 0,
+        search_method: "reliability_sort_fallback",
+        note: "Supplier database is empty. You MUST call maps_search_suppliers now to find live alternatives via Google Maps.",
+      };
+    }
 
     return {
       suppliers: results.map((s, i) => ({
@@ -675,8 +693,8 @@ export async function runAgentTurn(
     if (!hasGroq) throw geminiErr; // No fallback — surface the original error
 
     console.warn("Gemini agent failed — falling back to Groq Llama 3.3 70B:", geminiErr);
-    const { runGrokTurn } = await import("./agent-grok");
-    return await runGrokTurn(userMessage, history);
+    const { runGroqTurn } = await import("./agent-grok");
+    return await runGroqTurn(userMessage, history);
   }
 }
 

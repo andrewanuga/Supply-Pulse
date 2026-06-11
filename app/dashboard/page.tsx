@@ -226,6 +226,32 @@ function LogRow({ log }: { log: DecisionLog }) {
   );
 }
 
+// ─── Seed button (sidebar util) ───────────────────────────────────────────────
+function SidebarSeedButton() {
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  async function seed() {
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/seed", { method: "POST" });
+      if (res.ok) { setStatus("done"); setTimeout(() => setStatus("idle"), 3000); }
+      else setStatus("error");
+    } catch { setStatus("error"); }
+  }
+
+  const label = status === "loading" ? "Seeding…" : status === "done" ? "Seeded ✓" : status === "error" ? "Failed" : "Seed Sample Data";
+  const color = status === "done" ? "var(--accent)" : status === "error" ? "#f87171" : "var(--text-muted)";
+
+  return (
+    <button onClick={seed} disabled={status === "loading" || status === "done"}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:bg-[var(--bg-2)] disabled:opacity-60"
+      style={{ color }} title="Populate the database with sample suppliers and orders">
+      {status === "loading" ? <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Database className="w-4 h-4 flex-shrink-0" />}
+      <span className="hidden lg:block">{label}</span>
+    </button>
+  );
+}
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar({ active, setActive }: { active: string; setActive: (v: string) => void }) {
   const navItems = [
@@ -257,6 +283,7 @@ function Sidebar({ active, setActive }: { active: string; setActive: (v: string)
         ))}
       </nav>
       <div className="p-2 border-t space-y-1" style={{ borderColor: "var(--border)" }}>
+        <SidebarSeedButton />
         <Link href="/pitch" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:bg-[var(--bg-2)]"
           style={{ color: "var(--text-muted)" }}>
           <Zap className="w-4 h-4 flex-shrink-0" />

@@ -61,58 +61,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Preview mode when no LLM key is configured.
-    // Live mode requires at least one of: GOOGLE_API_KEY (Gemini, default) or
-    // GROQ_API_KEY (Groq Llama 3.3 70B, automatic fallback).
     const hasGemini =
       process.env.GOOGLE_API_KEY &&
       process.env.GOOGLE_API_KEY !== "your_google_api_key_here";
     const hasGroq =
       process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== "your_groq_api_key_here";
+
+    // No keys at all — run demo mode
     if (!hasGemini && !hasGroq) {
       const demo = getDemoResponse(message);
-      await new Promise((r) => setTimeout(r, 1200)); // simulate thinking
-      return NextResponse.json({
-        message: demo.message,
-        phase: demo.phase,
-        mapsUsed: demo.mapsUsed ?? false,
-      });
+      await new Promise((r) => setTimeout(r, 1200));
+      return NextResponse.json({ message: demo.message, phase: demo.phase, mapsUsed: demo.mapsUsed ?? false });
     }
 
-    const response = await runAgentTurn(message, history);
-    return NextResponse.json(response);
+    // Try Groq first (more reliable free tier), then Gemini, then demo fallback
+    let lastErr: unknown = null;
+
+    if (hasGroq) {
+      try {
+        const { runGroqTurn } = await import("@/lib/agent-grok");
+        const response = await runGroqTurn(message, history);
+        return NextResponse.json(response);
+      } catch (err) {
+        lastErr = err;
+        console.error("[Agent] Groq failed:", err);
+      }
+    }
+
+    if (hasGemini) {
+      try {
+        const { runGeminiTurn } = await import("@/lib/agent");
+        const response = await runGeminiTurn(message, history);
+        return NextResponse.json(response);
+      } catch (err) {
+        lastErr = err;
+        console.error("[Agent] Gemini failed:", err);
+      }
+    }
+
+    // Both failed — return demo so the UI never breaks
+    console.error("[Agent] All providers failed, serving demo. Last error:", lastErr);
+    const demo = getDemoResponse(message);
+    return NextResponse.json({
+      message: demo.message + "\n\n─────\n⚠ Live agent unavailable — showing demo response.\nCheck your terminal for the real error.",
+      phase: demo.phase,
+      mapsUsed: demo.mapsUsed ?? false,
+    });
   } catch (err) {
-    console.error("Agent error:", err);
-    const errStr = String(err);
-
-    let userMessage = "Agent failed. Check your API keys in .env.local.";
-    if (errStr.includes("GROQ_API_KEY") || errStr.includes("groq") || errStr.includes("api.groq.com")) {
-      userMessage =
-        "Both Gemini and the Groq fallback failed. Check GOOGLE_API_KEY and GROQ_API_KEY in .env.local.";
-    } else if (
-      errStr.includes("GOOGLE_API_KEY") ||
-      errStr.includes("API_KEY_INVALID") ||
-      errStr.includes("401")
-    ) {
-      userMessage =
-        "Invalid Google API key. Get a free key at aistudio.google.com and add GOOGLE_API_KEY to .env.local (powers the Gemini agent + supplier embeddings).";
-    } else if (
-      errStr.includes("MONGODB") ||
-      errStr.includes("MongoServerError") ||
-      errStr.includes("topology")
-    ) {
-      userMessage =
-        "Cannot connect to MongoDB. Check MONGODB_URI in .env.local and allowlist your IP in Atlas Network Access.";
-    } else if (errStr.includes("GMAIL") || errStr.includes("nodemailer") || errStr.includes("535") || errStr.includes("auth")) {
-      userMessage = "Gmail sending failed. Check GMAIL_USER and GMAIL_APP_PASSWORD in .env.local. Make sure you used an App Password, not your real Gmail password.";
-    } else if (errStr.includes("maps") || errStr.includes("GOOGLE_MAPS")) {
-      userMessage =
-        "Google Maps API error. Check GOOGLE_MAPS_API_KEY in .env.local. Agent will continue without Maps results.";
-    }
-
-    return NextResponse.json(
-      { error: userMessage, details: errStr },
-      { status: 500 }
-    );
+    console.error("[Agent] Unexpected error:", err);
+    const demo = getDemoResponse("");
+    return NextResponse.json({
+      message: demo.message + "\n\n─────\n⚠ Agent error — showing demo response.",
+      phase: "verify",
+      mapsUsed: false,
+    });
   }
 }
