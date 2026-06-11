@@ -7,6 +7,7 @@ import {
   Home, BarChart3, MessageSquare, Send, Zap, Package,
   TrendingUp, Users, RefreshCw, ChevronRight, Loader2,
   ShieldCheck, Key, Settings2, BookOpen, ExternalLink, MapPin,
+  Lightbulb, Sparkles, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -225,100 +226,6 @@ function LogRow({ log }: { log: DecisionLog }) {
   );
 }
 
-// ─── Setup guide ──────────────────────────────────────────────────────────────
-function SetupGuide({ onSeed, seeded }: { onSeed: () => void; seeded: boolean }) {
-  const [seedLoading, setSeedLoading] = useState(false);
-  const [seedDone, setSeedDone] = useState(seeded);
-  const [seedError, setSeedError] = useState("");
-
-  const handleSeed = async () => {
-    setSeedLoading(true);
-    setSeedError("");
-    try {
-      const res = await fetch("/api/seed", { method: "POST" });
-      const data = await res.json();
-      if (data.success) { setSeedDone(true); onSeed(); }
-      else setSeedError(data.error || "Failed");
-    } catch (e) { setSeedError(String(e)); }
-    finally { setSeedLoading(false); }
-  };
-
-  const steps = [
-    {
-      n: 1, icon: Key, title: "Configure API Keys",
-      desc: "Add MONGODB_URI, GOOGLE_API_KEY, GOOGLE_MAPS_API_KEY, GMAIL_USER, and GMAIL_APP_PASSWORD to .env.local. Get Maps key at console.cloud.google.com → enable Places API.",
-      action: null,
-      done: true,
-      link: { label: "Google Maps Console", href: "https://console.cloud.google.com/apis/library/places-backend.googleapis.com" },
-    },
-    {
-      n: 2, icon: Database, title: "Seed Demo Data",
-      desc: "Load 15 suppliers + 7 orders into MongoDB Atlas. For real vector search use scripts/seed.py (generates real 768-dim embeddings).",
-      done: seedDone,
-      action: () => handleSeed(),
-      actionLabel: seedLoading ? "Seeding…" : "Seed Now",
-      loading: seedLoading,
-    },
-    {
-      n: 3, icon: Settings2, title: "Create Atlas Vector Index",
-      desc: 'Atlas UI → your cluster → Search → Create Index. Collection: suppliers, field: profile_embedding, 768 dims, cosine. Name: supplier_vector_index.',
-      done: false,
-      link: { label: "Atlas Search Docs", href: "https://www.mongodb.com/docs/atlas/atlas-search/" },
-    },
-    {
-      n: 4, icon: MapPin, title: "Test Google Maps Fallback",
-      desc: "In the AI Agent: type a disruption. After DB results, the agent calls Maps Places API for live businesses near you. Watch the [MAPS LIVE] badges appear.",
-      done: false,
-      link: null,
-    },
-  ];
-
-  return (
-    <div className="glass-card rounded-2xl p-5 mb-6" style={{ borderColor: "rgba(37,99,235,0.2)", background: "rgba(37,99,235,0.03)" }}>
-      <div className="flex items-center gap-2 mb-4">
-        <BookOpen className="w-4 h-4" style={{ color: "var(--accent)" }} />
-        <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>Setup Guide</span>
-        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)", border: "1px solid rgba(37,99,235,0.2)" }}>
-          4 steps to go live
-        </span>
-      </div>
-      <div className="space-y-3">
-        {steps.map((s) => (
-          <div key={s.n} className="flex items-start gap-3 p-3 rounded-xl transition-colors"
-            style={{ background: s.done ? "rgba(52,211,153,0.05)" : "var(--bg-2)", border: `1px solid ${s.done ? "rgba(52,211,153,0.15)" : "var(--border)"}` }}>
-            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-              style={{ background: s.done ? "rgba(52,211,153,0.15)" : "rgba(37,99,235,0.1)", border: `1px solid ${s.done ? "rgba(52,211,153,0.3)" : "rgba(37,99,235,0.2)"}` }}>
-              {s.done ? <CheckCircle2 className="w-3.5 h-3.5 text-green-400" /> : <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>{s.n}</span>}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium" style={{ color: "var(--text)" }}>{s.title}</span>
-                {s.done && <span className="text-xs text-green-400">✓ Done</span>}
-              </div>
-              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
-              {seedError && s.n === 2 && <p className="text-xs text-red-400 mt-1">{seedError}</p>}
-            </div>
-            <div className="flex-shrink-0 flex items-center gap-2">
-              {s.action && !s.done && (
-                <Button size="sm" onClick={s.action} disabled={s.loading} className="text-xs gap-1">
-                  {s.loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
-                  {s.actionLabel}
-                </Button>
-              )}
-              {s.link && (
-                <a href={s.link.href} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs hover:underline" style={{ color: "var(--accent)" }}>
-                  {s.link.label} <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar({ active, setActive }: { active: string; setActive: (v: string) => void }) {
   const navItems = [
@@ -469,8 +376,12 @@ function ChatPanel() {
         setCurrentPhase(data.phase);
         setHistory([...newHistory, { role: "model", parts: [{ text: data.message }] }]);
       }
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Connection error. Make sure your .env.local is configured and the dev server is running.", timestamp: new Date() }]);
+    } catch (e) {
+      const isJsonError = e instanceof SyntaxError || String(e).includes("JSON");
+      const errMsg = isJsonError
+        ? "Hmm, something went wrong on my end. 🔧\n\nThe server ran into an unexpected error — this usually means an API key isn't set up yet or the MongoDB connection dropped.\n\nQuick fixes to try:\n• Check that GOOGLE_API_KEY and GROQ_API_KEY are in your .env.local\n• Make sure MongoDB Atlas has your IP allowlisted\n• Restart the dev server and try again\n\nIf the problem persists, check the terminal running 'npm run dev' for the full error."
+        : "I couldn't reach the server. 😕\n\nThis is usually a quick fix:\n• Make sure the dev server is still running (npm run dev)\n• Refresh the page and try again\n\nIf it keeps happening, check your .env.local file has all the required keys.";
+      setMessages((prev) => [...prev, { role: "assistant", content: errMsg, timestamp: new Date() }]);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -478,90 +389,94 @@ function ChatPanel() {
   };
 
   const quickPrompts = [
-    "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday.",
-    "Show me all current at-risk orders and total value at stake.",
-    "Find me alternative electronics suppliers in Lagos.",
+    { icon: AlertTriangle, label: "Supplier went silent", text: "Supplier Chukwuemeka Electronics has gone silent. 3 open orders, 800 TV remotes needed by Friday.", color: "#F87171" },
+    { icon: Package, label: "Check at-risk orders", text: "Show me all current at-risk orders and total value at stake.", color: "#FBBF24" },
+    { icon: Search, label: "Find suppliers", text: "Find me alternative electronics suppliers in Lagos.", color: "#60A5FA" },
   ];
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.2)" }}>
-            <Zap className="w-4 h-4" style={{ color: "var(--accent)" }} />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(37,99,235,0.12)", border: "1px solid rgba(37,99,235,0.2)" }}>
+            <Sparkles className="w-4 h-4" style={{ color: "var(--accent)" }} />
           </div>
           <div>
-            <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>SupplyPulse Agent</div>
+            <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>SupplyPulse AI Agent</div>
             <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-xs" style={{ color: "var(--accent)" }}>online · Gemini + Llama 3.3</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Ready · Gemini + Llama 3.3 fallback</span>
             </div>
           </div>
         </div>
-        <div className="text-xs" style={{ color: "var(--text-muted)" }}>MongoDB $vectorSearch · Gmail</div>
+        <div className="hidden sm:flex items-center gap-2 text-xs px-2.5 py-1 rounded-lg"
+          style={{ background: "var(--bg-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+          <Database className="w-3 h-3" /> MongoDB · Gmail
+        </div>
       </div>
 
       {/* Phase progress bar */}
       <PhaseProgressBar currentPhase={currentPhase} />
 
-      {/* Guidance banner */}
-      <div className="mx-4 mt-3 p-3 rounded-xl flex items-start gap-2 text-xs"
-        style={{ background: "rgba(37,99,235,0.06)", border: "1px solid rgba(37,99,235,0.15)" }}>
-        <span style={{ color: "var(--accent)" }}>💡</span>
-        <span style={{ color: "var(--text-muted)" }}>
-          <strong style={{ color: "var(--accent)" }}>Tip:</strong> Describe a disruption naturally — supplier name, product, urgency. The agent will SENSE → DIAGNOSE → MATCH → PLAN → EXECUTE → VERIFY automatically.
-        </span>
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+            {/* Avatar */}
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold"
               style={msg.role === "user"
-                ? { background: "var(--bg-2)", border: "1px solid var(--border)" }
-                : { background: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.25)" }}>
-              {msg.role === "user"
-                ? <Users className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                : <Zap className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />}
+                ? { background: "var(--bg-2)", border: "1px solid var(--border)", color: "var(--text-muted)" }
+                : { background: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.25)", color: "var(--accent)" }}>
+              {msg.role === "user" ? "You" : <Sparkles className="w-3.5 h-3.5" />}
             </div>
-            <div className={`flex flex-col gap-1 max-w-[82%] ${msg.role === "user" ? "items-end" : ""}`}>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {msg.role === "assistant" && msg.phase && <PhaseBadge phase={msg.phase} />}
-                {msg.role === "assistant" && msg.mapsUsed && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border"
-                    style={{ background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", color: "#FBBF24" }}>
-                    <MapPin className="w-2.5 h-2.5" /> Maps used
-                  </span>
-                )}
-              </div>
+
+            <div className={`flex flex-col gap-1.5 max-w-[84%] ${msg.role === "user" ? "items-end" : ""}`}>
+              {/* Badges */}
+              {msg.role === "assistant" && (msg.phase || msg.mapsUsed) && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {msg.phase && <PhaseBadge phase={msg.phase} />}
+                  {msg.mapsUsed && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", color: "#34D399" }}>
+                      <MapPin className="w-2.5 h-2.5" /> Google Maps used
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Bubble */}
               <div className="px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
                 style={msg.role === "user"
-                  ? { background: "rgba(37,99,235,0.15)", color: "var(--text)", border: "1px solid rgba(37,99,235,0.2)", borderTopRightRadius: 4 }
-                  : { background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)", borderTopLeftRadius: 4 }}>
+                  ? { background: "rgba(37,99,235,0.15)", color: "var(--text)", border: "1px solid rgba(37,99,235,0.25)", borderTopRightRadius: "6px" }
+                  : { background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)", borderTopLeftRadius: "6px" }}>
                 {msg.content}
               </div>
-              <span className="text-xs px-1" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+
+              {/* Timestamp */}
+              <span className="text-[11px] px-1" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
                 {msg.timestamp.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
           </div>
         ))}
+
+        {/* Loading bubble */}
         {loading && (
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.25)" }}>
-              <Zap className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+              <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
             </div>
             <div className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-3 glass-card">
-              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" style={{ color: "var(--accent)" }} />
-              <div>
-                <span className="text-xs font-mono font-bold" style={{ color: "var(--accent)" }}>
-                  [{LOADING_PHASES[loadingPhaseIdx]}]
+              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" style={{ color: "var(--accent)" }} />
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md"
+                  style={{ background: "rgba(37,99,235,0.1)", color: "var(--accent)" }}>
+                  {LOADING_PHASES[loadingPhaseIdx]}
                 </span>
-                <span className="text-xs ml-2" style={{ color: "var(--text-muted)" }}>Running agent loop…</span>
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>running agent loop…</span>
               </div>
             </div>
           </div>
@@ -569,36 +484,61 @@ function ChatPanel() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Quick prompts */}
+      {/* Quick prompts — only shown before first message */}
       {messages.length <= 1 && (
-        <div className="px-4 pb-2 space-y-2">
-          <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Quick starts — click to use:</p>
-          {quickPrompts.map((p) => (
-            <button key={p} onClick={() => setInput(p)}
-              className="w-full text-left text-xs px-3 py-2.5 rounded-xl transition-all duration-200 hover:border-[var(--accent)]"
-              style={{ background: "var(--bg-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
-              <span style={{ color: "var(--accent)" }}>› </span>{p}
-            </button>
-          ))}
+        <div className="px-4 pb-3">
+          <p className="text-xs font-medium mb-2.5 flex items-center gap-1.5"
+            style={{ color: "var(--text-muted)" }}>
+            <Lightbulb className="w-3 h-3" /> Try one of these to get started:
+          </p>
+          <div className="grid gap-2">
+            {quickPrompts.map((p) => (
+              <button key={p.label} onClick={() => { setInput(p.text); inputRef.current?.focus(); }}
+                className="flex items-start gap-3 text-left px-3.5 py-3 rounded-xl transition-all duration-200 group hover:scale-[1.01]"
+                style={{ background: "var(--bg-2)", border: "1px solid var(--border)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = p.color + "60")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: p.color + "15", border: `1px solid ${p.color}30` }}>
+                  <p.icon className="w-3 h-3" style={{ color: p.color }} />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold mb-0.5" style={{ color: "var(--text)" }}>{p.label}</div>
+                  <div className="text-xs leading-relaxed line-clamp-1" style={{ color: "var(--text-muted)" }}>{p.text}</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Input */}
-      <div className="p-4 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="flex gap-2">
-          <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="Describe a supply chain disruption…"
-            className="flex-1 rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all"
-            style={{
-              background: "var(--bg-2)", border: "1px solid var(--border)",
-              color: "var(--text)", outline: "none",
-            }}
-            disabled={loading} />
-          <Button onClick={sendMessage} disabled={loading || !input.trim()} size="icon" className="flex-shrink-0">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="flex gap-2 items-end">
+          <div className="flex-1 relative">
+            <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              placeholder="e.g. My supplier hasn't responded in 3 days, I have orders due Friday…"
+              className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none transition-all"
+              style={{
+                background: "var(--bg-2)",
+                border: "1px solid var(--border)",
+                color: "var(--text)",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+              disabled={loading} />
+          </div>
+          <Button onClick={sendMessage} disabled={loading || !input.trim()}
+            className="rounded-2xl px-4 h-[46px] flex-shrink-0 gap-1.5">
+            {loading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <><Send className="w-3.5 h-3.5" /><span className="text-xs hidden sm:inline">Send</span></>}
           </Button>
         </div>
+        <p className="text-[11px] mt-2 px-1" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+          Press Enter to send · The agent will guide you through all 7 steps
+        </p>
       </div>
     </div>
   );
@@ -606,11 +546,10 @@ function ChatPanel() {
 
 // ─── Dashboard overview ───────────────────────────────────────────────────────
 function DashboardOverview({
-  stats, orders, logs, loading, onRefresh, showSetup, onSeed, seeded,
+  stats, orders, logs, loading, onRefresh,
 }: {
   stats: DashboardStats; orders: Order[]; logs: DecisionLog[];
-  loading: boolean; onRefresh: () => void; showSetup: boolean;
-  onSeed: () => void; seeded: boolean;
+  loading: boolean; onRefresh: () => void;
 }) {
   const atRisk = orders.filter((o) => o.status === "at_risk" || o.status === "pending");
   const totalAtRisk = atRisk.reduce((sum, o) => sum + o.quantity * o.unit_price, 0);
@@ -618,18 +557,24 @@ function DashboardOverview({
 
   return (
     <div className="space-y-6">
-      {showSetup && <SetupGuide onSeed={onSeed} seeded={seeded} />}
-
       {/* KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KPICard icon={AlertTriangle} label="Active disruptions" value={stats.activeDisruptions}
-          sub="Needs attention" accentColor="#F87171" pulse={stats.activeDisruptions > 0} />
-        <KPICard icon={CheckCircle2} label="Resolved total" value={stats.resolvedCount}
-          sub="Decision audit logged" accentColor="#34D399" />
-        <KPICard icon={Clock} label="Avg resolve time" value={`${stats.avgResolveTimeMins}min`}
-          sub="vs. 6hr manual" accentColor="#60A5FA" />
-        <KPICard icon={TrendingUp} label="At-risk value" value={formatNaira(totalAtRisk)}
-          sub="Open + at-risk orders" accentColor="#FBBF24" />
+        <KPICard icon={AlertTriangle} label="Active disruptions"
+          value={orders.length === 0 ? "—" : stats.activeDisruptions}
+          sub={orders.length === 0 ? "Seed data to see live stats" : "Needs attention"}
+          accentColor="#F87171" pulse={stats.activeDisruptions > 0} />
+        <KPICard icon={CheckCircle2} label="Resolved total"
+          value={orders.length === 0 ? "—" : stats.resolvedCount}
+          sub={orders.length === 0 ? "Run the AI agent to resolve" : "Decision audit logged"}
+          accentColor="#34D399" />
+        <KPICard icon={Clock} label="Avg resolve time"
+          value={orders.length === 0 ? "—" : `${stats.avgResolveTimeMins}min`}
+          sub={orders.length === 0 ? "vs. 6hr+ manual process" : "vs. 6hr manual"}
+          accentColor="#60A5FA" />
+        <KPICard icon={TrendingUp} label="At-risk value"
+          value={orders.length === 0 ? "—" : formatNaira(totalAtRisk)}
+          sub={orders.length === 0 ? "Open + at-risk orders" : "Open + at-risk orders"}
+          accentColor="#FBBF24" />
       </div>
 
       {/* Main grid */}
@@ -802,8 +747,6 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [logs, setLogs] = useState<DecisionLog[]>([]);
   const [loading, setLoading] = useState(false);
-  const [seeded, setSeeded] = useState(false);
-  const [showSetup, setShowSetup] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -813,15 +756,12 @@ export default function DashboardPage() {
       const oData = await oRes.json();
       if (dData.stats) setStats(dData.stats);
       if (dData.recentLogs) setLogs(dData.recentLogs);
-      if (oData.orders) {
-        setOrders(oData.orders);
-        if (oData.orders.length > 0) setShowSetup(false);
-      }
+      if (oData.orders) setOrders(oData.orders);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData, seeded]);
+  useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -840,9 +780,7 @@ export default function DashboardPage() {
         return (
           <DashboardOverview
             stats={stats} orders={orders} logs={logs} loading={loading}
-            onRefresh={fetchData} showSetup={showSetup}
-            onSeed={() => { setSeeded(true); fetchData(); setShowSetup(false); }}
-            seeded={seeded}
+            onRefresh={fetchData}
           />
         );
       case "chat":
@@ -913,7 +851,6 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <UserMenu />
-            <TopbarSeedButton onSeeded={() => { setSeeded(true); fetchData(); }} />
             <Button size="sm" variant="ghost" onClick={fetchData} className="gap-1.5 text-xs">
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline" style={{ color: "var(--text-muted)" }}>Refresh</span>
